@@ -24,7 +24,7 @@ The most widespread ISA in personal computers. Originally 16-bit, now 64-bit (x8
 
 Dominant in mobile devices and increasingly in servers. Reduced instruction set (RISC) with fixed-length instructions. Power-efficient by design.
 
-### MIP
+### MIPS
 
 A clean, simple RISC ISA often used in education. Its simplicity makes it ideal for learning how processors actually work.
 
