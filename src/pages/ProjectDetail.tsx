@@ -32,14 +32,15 @@ export default function ProjectDetail() {
 
         {/* Header */}
         <div className="mb-10">
-          <div className="flex items-start justify-between gap-4 mb-4">
-            <div>
-              <span className="text-xs font-mono text-accent uppercase tracking-wider">{project .category}</span>
+          <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
+            <div className="min-w-0">
+              <span className="text-xs font-mono text-accent uppercase tracking-wider">{project.category}</span>
               <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mt-2">{project.title}</h1>
             </div>
-            <span className={`text-xs px-2.5 py-1 rounded-full border whitespace-nowrap ${
+            <span className={`self-start text-xs px-2.5 py-1 rounded-full border whitespace-nowrap ${
               project.status === "Active" ? "border-green/30 text-green" :
               project.status === "Planned" ? "border-yellow/30 text-yellow" :
+              project.status === "Coming Soon" ? "border-purple/30 text-purple" :
               "border-text-muted/30 text-text-muted"
             }`}>
               {project.status}
@@ -48,8 +49,8 @@ export default function ProjectDetail() {
           <p className="text-lg text-text-secondary">{project.description}</p>
 
           {/* Links */}
-          <div className="flex gap-3 mt-6">
-            {project.github && (
+          <div className="flex flex-wrap gap-3 mt-6">
+            {project.github?.trim() && (
               <a
                 href={project.github}
                 target="_blank"
@@ -60,7 +61,7 @@ export default function ProjectDetail() {
                 Source Code
               </a>
             )}
-            {project.demo && (
+            {project.demo?.trim() && (
               <a
                 href={project.demo}
                 target="_blank"
@@ -150,7 +151,7 @@ export default function ProjectDetail() {
         </div>
 
         {/* GitHub CTA */}
-        {project.github && (
+        {project.github?.trim() && (
           <div className="mt-12 p-6 rounded-lg border border-border bg-bg-card text-center">
             <h3 className="text-base font-semibold text-text-primary mb-2">View Source Code</h3>
             <p className="text-sm text-text-muted mb-4">

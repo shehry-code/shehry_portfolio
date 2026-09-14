@@ -291,6 +291,15 @@ export const blogPosts: BlogPost[] = [
 // NOTES
 // ============================================================
 
+const noteContent = import.meta.glob(
+  "../content/notes/*.md",
+  {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }
+) as Record<string, string>;
+
 export interface Note {
   slug: string;
   title: string;
@@ -309,36 +318,7 @@ export const notes: Note[] = [
     date: "2026-05-10",
     tags: ["Digital Logic", "Hardware", "Transistors"],
     category: "Digital Logic",
-    content: `
-## MOS Transistor Basics
-
-A MOS (Metal-Oxide-Semiconductor) transistor is a voltage-controlled switch. It's the fundamental building block of all modern digital circuits.
-
-### Types
-- **NMOS**: Conducts when gate voltage is HIGH
-- **PMOS**: Conducts when gate voltage is LOW
-
-### Terminals
-- **Gate (G)**: Control input
-- **Source (S)**: Where carriers enter
-- **Drain (D)**: Where carriers exit
-- **Body (B)**: Substrate connection
-
-### How It Works
-
-When voltage is applied to the gate, an electric field creates a conductive channel between source and drain. No gate voltage = no channel = open switch.
-
-This simple switching behavior is what enables all digital computation.
-
-### CMOS
-
-Modern circuits use **Complementary MOS** (CMOS) — pairs of NMOS and PMOS transistors. This design:
-- Consumes power only during switching
-- Provides clean logic levels
-- Is resistant to noise
-
-Every gate in your CPU is built from CMOS transistors.
-`,
+    content: noteContent["../content/notes/mos-transistors.md"],
   },
   {
     slug: "flip-flops",
@@ -347,41 +327,7 @@ Every gate in your CPU is built from CMOS transistors.
     date: "2026-05-15",
     tags: ["Digital Logic", "Sequential Logic", "Memory"],
     category: "Digital Logic",
-    content: `
-## What Is a Flip-Flop?
-
-A flip-flop is a circuit that stores **one bit** of data. Unlike combinational logic (where output depends only on current input), flip-flops have **memory** — their output depends on both current input and previous state.
-
-## SR Flip-Flop (Set-Reset)
-
-The simplest flip-flop:
-- **S (Set)**: Output → 1
-- **R (Reset)**: Output → 0
-- Both low: Hold previous state
-- Both high: Invalid/forbidden
-
-Built from two cross-coupled NOR or NAND gates.
-
-## D Flip-Flop
-
-The most commonly used flip-flop:
-- Has a **data input (D)** and a **clock input (CLK)**
-- On clock edge, Q = D
-- Between clock edges, Q holds its value
-
-This edge-triggered behavior is what makes synchronous digital systems work.
-
-## Applications
-
-- **Registers**: Collections of flip-flops store multi-bit values
-- **Counters**: Flip-flops chained together count events
-- **Memory**: SRAM cells are essentially flip-flops
-- **State Machines**: Flip-flops hold the state
-
-## Key Insight
-
-Without flip-flops, computers couldn't store anything. They're what make sequential computation possible — the difference between a calculator and a computer.
-`,
+    content: noteContent["../content/notes/flip-flops.md"],
   },
   {
     slug: "cpu-registers-note",
@@ -390,45 +336,7 @@ Without flip-flops, computers couldn't store anything. They're what make sequent
     date: "2026-06-01",
     tags: ["x86", "Assembly", "CPU", "Registers"],
     category: "Computer Architecture",
-    content: `
-## x86-64 Registers Quick Reference
-
-### General Purpose (64-bit)
-
-| Register | Common Use |
-|----------|-----------|
-| RAX | Return value, accumulator |
-| RBX | Callee-saved general purpose |
-| RCX | Loop counter, shift amount |
-| RDX | I/O, extended multiply/divide |
-| RSI | Source index (string ops) |
-| RDI | Destination index, first arg |
-| RSP | Stack pointer |
-| RBP | Base/frame pointer |
-| R8-R15 | Additional GPRs |
-
-### Special Purpose
-
-| Register | Purpose |
-|----------|---------|
-| RIP | Instruction pointer |
-| RFLAGS | Condition flags |
-| CS/DS/SS | Segment registers |
-
-### Sub-registers
-
-Each 64-bit register can be accessed as:
-- 64-bit: RAX
-- 32-bit: EAX
-- 16-bit: AX
-- 8-bit high: AH
-- 8-bit low: AL
-
-### Calling Convention (System V AMD64)
-
-Arguments passed in: RDI, RSI, RDX, RCX, R8, R9
-Return value in: RAX
-`,
+    content: noteContent["../content/notes/cpu-registers-note.md"],
   },
   {
     slug: "dram-row-buffer",
@@ -437,36 +345,7 @@ Return value in: RAX
     date: "2026-06-20",
     tags: ["DRAM", "Memory", "Computer Architecture"],
     category: "Computer Architecture",
-    content: `
-## The Row Buffer
-
-When a DRAM row is activated, its entire contents are sense-amplified and stored in the **row buffer** — a fast buffer that holds the active row's data.
-
-## Row Hit vs Row Miss
-
-- **Row Hit**: Requested column is in the currently active row → fast access
-- **Row Miss**: Requested column is in a different row → must precharge + activate new row → slow
-
-## Implications
-
-Sequential access patterns benefit from row buffer locality. Random access patterns cause constant row conflicts.
-
-This is why:
-- Sequential memory access is fast
-- Random access is slow
-- Memory scheduling algorithms try to maximize row hits
-
-## Open vs Closed Page Policy
-
-- **Open page**: Keep row buffer active after access (good for sequential)
-- **Closed page**: Precharge immediately after access (good for random)
-
-Modern controllers use adaptive policies.
-
-## Security Note
-
-Row buffer state can be exploited in side-channel attacks. Understanding row buffer behavior is essential for understanding RowHammer and similar vulnerabilities.
-`,
+    content: noteContent["../content/notes/dram-row-buffer.md"],
   },
   {
     slug: "tcp-vs-udp",
@@ -475,47 +354,7 @@ Row buffer state can be exploited in side-channel attacks. Understanding row buf
     date: "2026-07-05",
     tags: ["Networking", "TCP", "UDP", "Protocols"],
     category: "Networking",
-    content: `
-## TCP (Transmission Control Protocol)
-
-**Connection-oriented, reliable, ordered**
-
-- Three-way handshake (SYN → SYN-ACK → ACK)
-- Guaranteed delivery with acknowledgments
-- Ordered delivery with sequence numbers
-- Flow control (sliding window)
-- Congestion control
-- Higher overhead
-
-**Use when**: Data integrity matters (web, email, file transfer)
-
-## UDP (User Datagram Protocol)
-
-**Connectionless, unreliable, unordered**
-
-- No handshake
-- No delivery guarantees
-- No ordering
-- No flow/congestion control
-- Minimal overhead
-- Faster for small messages
-
-**Use when**: Speed matters more than reliability (DNS, streaming, gaming, VoIP)
-
-## Header Comparison
-
-| Feature | TCP | UDP |
-|---------|-----|-----|
-| Header Size | 20-60 bytes | 8 bytes |
-| Connection | Yes | No |
-| Reliability | Yes | No |
-| Ordering | Yes | No |
-| Speed | Slower | Faster |
-
-## Key Insight
-
-TCP adds reliability on top of IP. UDP is essentially raw IP with port numbers. Choose based on your application's requirements.
-`,
+    content: noteContent["../content/notes/tcp-vs-udp.md"],
   },
   {
     slug: "linux-process-states",
@@ -524,58 +363,7 @@ TCP adds reliability on top of IP. UDP is essentially raw IP with port numbers. 
     date: "2026-07-20",
     tags: ["Linux", "Operating Systems", "Processes"],
     category: "Operating Systems",
-    content: `
-## Process States in Linux
-
-Every process in Linux exists in one of several states:
-
-### Running (R)
-Currently executing on a CPU or in the run queue waiting for a CPU.
-
-### Sleeping / Interruptible (S)
-Waiting for an event (I/O, signal, resource). Can be interrupted by signals.
-
-### Deep Sleep / Uninterruptible (D)
-Waiting for I/O. Cannot be interrupted — not even by signals. This is the state you see when a process is stuck on disk I/O.
-
-### Stopped (T)
-Stopped by a signal (SIGSTOP, Ctrl+Z). Can be resumed with SIGCONT.
-
-### Zombie (Z)
-Process has terminated but parent hasn't called wait(). The process table entry is kept until the parent reaps it.
-
-## State Transitions
-
-\`\`\`
-  ┌──────────┐
-  │ Running  │ ←── scheduler
-  └────┬─────┘
-       │
-  ┌────┴──────────┐
-  │               │
-  ▼               ▼
-┌──────┐    ┌──────────────┐
-│Sleep │    │Uninterruptible│
-│  (S) │    │    (D)       │
-└──┬───┘    └──────┬───────┘
-   │               │
-   └───────┬───────┘
-           │ event/signal
-           ▼
-     ┌──────────┐
-     │ Running  │
-     └──────────┘
-\`\`\`
-
-## Checking Process States
-
-\`\`\`bash
-ps aux          # See all processes
-ps -eo pid,stat,comm  # Show state codes
-top             # Real-time view
-/proc/[pid]/status    # Detailed info
-\`\`\`
-`,
+        content: noteContent["../content/notes/linux-process-states.md"],
   },
 ];
 

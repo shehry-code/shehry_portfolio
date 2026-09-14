@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { Search, BookOpen } from "lucide-react";
 import { notes } from "../data/content";
 
@@ -73,7 +74,8 @@ export default function Notes() {
         {/* Notes Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((note) => (
-            <div
+            <Link
+              to={`/notes/${note.slug}`}
               key={note.slug}
               className="group p-5 rounded-lg border border-border bg-bg-card hover:border-accent/20 transition-all"
             >
@@ -102,7 +104,7 @@ export default function Notes() {
               <div className="text-xs text-text-muted font-mono">
                 {new Date(note.date).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 

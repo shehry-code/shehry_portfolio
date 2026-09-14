@@ -51,10 +51,10 @@ export default function Projects() {
               key={project.slug}
               className="group p-5 rounded-lg border border-border bg-bg-card hover:border-accent/20 transition-all"
             >
-              <div className="flex items-start justify-between mb-3">
+              <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
                 <Link
                   to={`/projects/${project.slug}`}
-                  className="text-base font-semibold text-text-primary group-hover:text-accent transition-colors"
+                  className="min-w-0 text-base font-semibold text-text-primary group-hover:text-accent transition-colors"
                 >
                   {project.title}
                 </Link>
@@ -84,7 +84,7 @@ export default function Projects() {
                 <span className="text-xs text-accent font-mono">{project.category}</span>
                 <span className="text-xs text-text-muted">{project.date}</span>
                 <div className="ml-auto flex gap-2">
-                  {project.github && (
+                  {project.github?.trim() && (
                     <a
                       href={project.github}
                       target="_blank"
@@ -95,7 +95,7 @@ export default function Projects() {
                       <Github size={14} />
                     </a>
                   )}
-                  {project.demo && (
+                  {project.demo?.trim() && (
                     <a
                       href={project.demo}
                       target="_blank"

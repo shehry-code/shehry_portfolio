@@ -9,6 +9,7 @@ import ProjectDetail from "./pages/ProjectDetail";
 import Blog from "./pages/Blog";
 import BlogPost from "./pages/BlogPost";
 import Notes from "./pages/Notes";
+import NoteDetail from "./pages/NoteDetail";
 import Research from "./pages/Research";
 import Work from "./pages/Work";
 import Contact from "./pages/Contact";
@@ -36,6 +37,7 @@ function AppContent() {
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/notes" element={<Notes />} />
+          <Route path="/notes/:slug" element={<NoteDetail />} />
           <Route path="/research" element={<Research />} />
           <Route path="/work" element={<Work />} />
           <Route path="/contact" element={<Contact />} />
