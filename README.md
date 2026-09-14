@@ -1,253 +1,183 @@
 # Shehry — Personal Engineering Portfolio
 
-A personal engineering portfolio and technical blog built with React, TypeScript, and Tailwind CSS.
+A personal engineering portfolio and learning journal focused on understanding computing from the hardware and low-level layers upward.
 
-## Overview
+The portfolio documents an ongoing Computer Science learning journey across cybersecurity, computer architecture, operating systems, Linux, networking, systems programming, assembly, C/C++, reverse engineering, low-level computing, and hardware/security research.
 
-This is a long-term personal platform for documenting projects, writing technical articles, maintaining an engineering knowledge base, and showcasing research in computer science, cybersecurity, and systems engineering.
+## Portfolio Structure
 
-## Tech Stack
+The sections have distinct purposes:
 
-- **React 18** — UI framework
-- **TypeScript** — Type safety
-- **Tailwind CSS v4** — Styling
-- **React Router** — Client-side routing
-- **React Markdown** — Blog content rendering
-- **Lucide React** — Icons
-- **Vite** — Build tool
+- **Projects** — things I actually build
+- **Blogs** — polished explanations of things I learned
+- **Notes** — short, raw learning material
+- **Research** — deeper investigations and experiments
+- **About** — who I am, what I study, and how I learn
+
+## Technology Stack
+
+- React 18
+- TypeScript
+- Vite
+- Tailwind CSS v4
+- `@tailwindcss/vite`
+- React Router DOM with `HashRouter`
+- React Markdown
+- `remark-gfm` for GitHub-Flavored Markdown
+- `lucide-react` for icons
+- Native `mailto:` contact flow
 
 ## Getting Started
 
-### Install Dependencies
+From the project directory:
 
 ```bash
 npm install
-```
-
-### Run Development Server
-
-```bash
 npm run dev
 ```
 
-The site will be available at `http://localhost:3000`
+The development server runs at [http://localhost:3000](http://localhost:3000).
 
-### Build for Production
+Run the checks and production build with:
 
 ```bash
+npm run typecheck
 npm run build
 ```
 
-### Preview Production Build
-
-```bash
-npm run preview
-```
+The production build is generated in `dist/`.
 
 ## Project Structure
 
-```
+```text
 src/
-├── App.tsx              # Main app with routing
-├── main.tsx             # Entry point
-├── index.css            # Global styles + Tailwind
+├── App.tsx
 ├── components/
-│   ├── Navbar.tsx       # Navigation bar
-│   ├── Footer.tsx       # Site footer
-│   ├── Hero.tsx         # Homepage hero section
-│   └── SearchModal.tsx  # Global search (⌘K)
+│   ├── Footer.tsx
+│   ├── Hero.tsx
+│   └── Navbar.tsx
 ├── data/
-│   └── content.ts       # All site content (projects, blog, notes, etc.)
-└── pages/
-    ├── Home.tsx         # Homepage
-    ├── About.tsx        # About page
-    ├── Projects.tsx     # Projects listing
-    ├── ProjectDetail.tsx # Individual project page
-    ├── Blog.tsx         # Blog listing
-    ├── BlogPost.tsx     # Individual blog post
-    ├── Notes.tsx        # Notes/knowledge base
-    ├── Research.tsx     # Research & experiments
-    ├── Work.tsx         # Work experience
-    ├── Contact.tsx      # Contact page
-    └── NotFound.tsx     # 404 page
+│   └── content.ts
+├── content/
+│   ├── blogs/
+│   └── notes/
+├── pages/
+│   ├── About.tsx
+│   ├── Blog.tsx
+│   ├── BlogPost.tsx
+│   ├── Contact.tsx
+│   ├── Home.tsx
+│   ├── Notes.tsx
+│   ├── NoteDetail.tsx
+│   ├── NotFound.tsx
+│   ├── ProjectDetail.tsx
+│   ├── Projects.tsx
+│   ├── Research.tsx
+│   └── Work.tsx
+└── index.css
 ```
 
-## How to Add Content
+## Content Architecture
 
-All content is managed through `src/data/content.ts`. This makes it easy to add new content without modifying components.
+### Structured Data
 
-### Add a New Project
+`src/data/content.ts` contains metadata and structured data for:
 
-Open `src/data/content.ts` and add to the `projects` array:
+- Profile and social links
+- Current focus
+- Skills and skill levels
+- Projects
+- Blog metadata
+- Notes metadata
+- Research entries
+- Learning timeline
 
-```typescript
-{
-  slug: "my-new-project",
-  title: "My New Project",
-  description: "Short description of the project.",
-  longDescription: "Detailed description...",
-  technologies: ["Tech1", "Tech2"],
-  category: "Systems",
-  status: "Active", // "Active" | "Completed" | "Planned" | "Coming Soon"
-  github: "https://github.com/...",
-  demo: "https://...",
-  featured: true,
-  date: "2026",
-}
+### Blogs
+
+Blog metadata lives in `src/data/content.ts`. Blog bodies are separate Markdown files under `src/content/blogs/`. Vite's `import.meta.glob()` loader makes the raw Markdown available, and detail pages render it with React Markdown and GitHub-Flavored Markdown support.
+
+To add a blog post:
+
+1. Add a `.md` file to `src/content/blogs/`.
+2. Add the matching metadata entry to `blogPosts` in `src/data/content.ts`.
+3. Keep the metadata slug and filename consistent.
+4. The existing loader makes the body available to the blog detail route.
+
+There is no CMS or backend involved.
+
+### Notes
+
+Note metadata lives in `src/data/content.ts`, while note bodies are separate Markdown files under `src/content/notes/`. They use a Notes-specific Vite `import.meta.glob()` loader and dedicated detail routes through `NoteDetail.tsx`.
+
+To add a note:
+
+1. Add a Markdown file to `src/content/notes/`.
+2. Add matching metadata to the `notes` data in `src/data/content.ts`.
+3. Keep the metadata slug and filename consistent.
+4. The existing loader exposes the body to `NoteDetail.tsx`.
+
+### Projects
+
+Project metadata is maintained in `src/data/content.ts`. Projects are listed at `/projects` and use dynamic detail routes at `/projects/:slug`.
+
+### Research
+
+Research entries are structured data in `src/data/content.ts`. They represent investigations that may be ideas, planned work, in-progress work, or completed work. The status reflects the current state of each investigation.
+
+### Learning Journey
+
+The About page uses the timeline data in `src/data/content.ts` to describe the existing learning journey.
+
+## Routes
+
+The application uses React Router's `HashRouter`, so deployed navigation uses hash-based URLs:
+
+```text
+/
+/about
+/projects
+/projects/:slug
+/blog
+/blog/:slug
+/notes
+/notes/:slug
+/research
+/work
+/contact
 ```
 
-### Add a New Blog Post
+A catch-all route renders the 404 page for unknown paths.
 
-Add to the `blogPosts` array:
+## Contact Behavior
 
-```typescript
-{
-  slug: "my-blog-post",
-  title: "My Blog Post Title",
-  description: "Short description for listing.",
-  date: "2026-01-15",
-  tags: ["Tag1", "Tag2"],
-  category: "Computer Architecture",
-  featured: false,
-  draft: false,
-  readingTime: 5,
-  content: `
-## Introduction
+The Contact page is fully static. It has no backend or API. Submitting the form prepares a `mailto:` email draft containing the visitor's name, email, subject, and message. The visitor's email client handles sending the message.
 
-Your markdown content here...
+## Accessibility and UX
 
-## Code Example
+The current interface includes:
 
-\`\`\`c
-int main() {
-    return 0;
-}
-\`\`\`
-  `,
-}
-```
-
-Blog posts support full Markdown including:
-- Headings, paragraphs, lists
-- Code blocks with syntax context
-- Tables
-- Blockquotes
-- Links and images
-- GFM (GitHub Flavored Markdown)
-
-### Add a New Note
-
-Add to the `notes` array:
-
-```typescript
-{
-  slug: "my-note",
-  title: "Note Title",
-  description: "Brief description.",
-  date: "2026-01-15",
-  tags: ["Tag1"],
-  category: "Computer Architecture",
-  content: `Note content in markdown...`,
-}
-```
-
-### Add Research
-
-Add to the `researchItems` array:
-
-```typescript
-{
-  slug: "my-research",
-  title: "Research Title",
-  description: "Description.",
-  date: "2026",
-  status: "Idea", // "Idea" | "In Progress" | "Completed" | "Planned"
-  tags: ["Security"],
-  category: "Security Research",
-  motivation: "Why this matters.",
-  method: "How I'm approaching this.",
-  currentStatus: "What I've done so far.",
-  github: "https://github.com/...",
-}
-```
-
-### Update Personal Information
-
-Edit the `profile` object at the top of `src/data/content.ts`:
-
-```typescript
-export const profile = {
-  name: "Your Name",
-  title: "Your Title",
-  subtitle: "Your Focus Areas",
-  tagline: "Your tagline",
-  description: "Your description",
-  email: "your@email.com",
-  github: "https://github.com/yourusername",
-  linkedin: "https://linkedin.com/in/yourusername",
-};
-```
-
-### Update Skills
-
-Edit the `skills` array:
-
-```typescript
-{
-  category: "Category Name",
-  skills: [
-    { name: "Skill Name", level: "comfortable" }, // "comfortable" | "learning" | "familiar"
-  ],
-}
-```
-
-### Update Timeline
-
-Edit the `timeline` array:
-
-```typescript
-{
-  year: "2026",
-  title: "What happened",
-  items: ["Detail 1", "Detail 2"],
-}
-```
-
-## Features
-
-- **Dark theme** with terminal/systems aesthetic
-- **Responsive design** (mobile, tablet, desktop)
-- **Global search** (⌘K / Ctrl+K) across all content
-- **Blog system** with markdown, tags, categories, search
-- **Project showcase** with filtering and detail pages
-- **Notes/Knowledge base** with categorization
-- **Research section** for experiments and investigations
-- **Contact form** (mailto integration)
-- **SEO metadata** and semantic HTML
-- **Accessibility** (keyboard nav, focus states, reduced motion)
-- **Performance optimized** (minimal dependencies, static generation)
+- Keyboard-accessible navigation and mobile menu controls
+- Visible focus states
+- Accessible filter controls
+- Labeled search inputs
+- Semantic heading structure
+- Responsive layouts for mobile, tablet, and desktop
+- Native form validation
+- No known horizontal overflow at tested widths
 
 ## Deployment
 
-The site builds to static files in `dist/`. Deploy to any static hosting:
+This is a static Vite application deployed on Vercel.
 
-- **Vercel**: `vercel deploy`
-- **Netlify**: Drag `dist/` folder or connect repo
-- **GitHub Pages**: Push `dist/` to gh-pages branch
-- **Any static server**: Upload `dist/` contents
+1. Install dependencies with `npm install`.
+2. Build the site with `npm run build`.
+3. Vite generates the static output in `dist/`.
+4. Deploy the generated application through Vercel.
 
-## Configuration
+`HashRouter` is intentional for this static deployment, so the application does not require server-side routing or a backend rewrite configuration.
 
-### Contact Form
-
-The contact form currently opens the user's email client via `mailto:`. To use a real backend:
-
-1. Set up a form service (Formspree, Netlify Forms, etc.)
-2. Update the `handleSubmit` function in `src/pages/Contact.tsx`
-
-### GitHub Integration
-
-Project GitHub links are configured in `src/data/content.ts`. For live GitHub API integration (stars, forks), add API calls to the project components.
+- GitHub: [shehry-code/shehry_portfolio](https://github.com/shehry-code/shehry_portfolio)
+- Portfolio: [shehry-portfolio.vercel.app](https://shehry-portfolio.vercel.app)
 
 ## License
 
