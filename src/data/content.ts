@@ -1,3 +1,5 @@
+
+
 // ============================================================
 // PROFILE DATA
 // ============================================================
@@ -199,6 +201,15 @@ export const projects: Project[] = [
 // BLOG POSTS
 // ============================================================
 
+const blogContent = import.meta.glob(
+  "../content/blogs/*.md",
+  {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }
+) as Record<string, string>;
+
 export interface BlogPost {
   slug: string;
   title: string;
@@ -224,67 +235,7 @@ export const blogPosts: BlogPost[] = [
     featured: true,
     draft: false,
     readingTime: 7,
-    content: `
-## Introduction
-
-An **Instruction Set Architecture** (ISA) is the abstract model that defines how a CPU operates. It's the contract between hardware and software — the set of rules that tells a processor what instructions it can execute and how.
-
-Think of it as the language a CPU speaks. Just as you need to know English to read this sentence, a program must be written in the CPU's ISA to be executed.
-
-## What Does an ISA Define?
-
-An ISA specifies several critical things:
-
-- **Instructions**: What operations the CPU can perform (ADD, MOV, JMP, etc.)
-- **Registers**: The internal storage locations available to programs
-- **Memory Model**: How the CPU addresses and accesses memory
-- **Data Types**: What sizes of data the CPU can work with natively
-- **Interrupts**: How the CPU handles external events
-
-## Common ISAs
-
-### x86
-The most widespread ISA in personal computers. Originally 16-bit, now 64-bit (x86-64). Complex instruction set (CISC) with variable-length instructions.
-
-### ARM
-Dominant in mobile devices and increasingly in servers. Reduced instruction set (RISC) with fixed-length instructions. Power-efficient by design.
-
-### MIPS
-A clean, simple RISC ISA often used in education. Its simplicity makes it ideal for learning how processors actually work.
-
-### RISC-V
-An open-source ISA gaining momentum. Modular design allows custom extensions.
-
-## Why ISA Matters
-
-The ISA is where software meets hardware. Understanding it helps you:
-
-1. Write more efficient code
-2. Understand compiler output
-3. Debug at a lower level
-4. Understand security vulnerabilities
-5. Design better systems
-
-## The Layer Beneath
-
-\`\`\`
-Your Code (C/Python/Java)
-    ↓
-Compiler / Interpreter
-    ↓
-Assembly Instructions (ISA)
-    ↓
-Microarchitecture (implementation)
-    ↓
-Transistors (physics)
-\`\`\`
-
-The ISA sits right at this boundary. It's abstract enough to allow different implementations, but concrete enough that programmers can reason about performance.
-
-## Conclusion
-
-The ISA is one of the most important abstractions in computing. It defines what's possible on a processor and shapes everything above it. Understanding ISA is understanding the foundation of all software execution.
-`,
+    content: blogContent["../content/blogs/what-is-an-isa.md"],
   },
   {
     slug: "how-dram-stores-data",
