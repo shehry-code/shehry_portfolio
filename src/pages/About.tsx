@@ -77,9 +77,13 @@ export default function About() {
                 "Digital Logic & Circuits",
                 "Transistors (Physics)",
               ].map((layer, i) => (
-                <div key={layer} className="flex items-center gap-2 mb-1">
-                  <span className="text-accent">{"→".repeat(i > 0 ? 1 : 0) || "●"}</span>
-                  <span className="text-text-secondary">{layer}</span>
+                <div
+                  key={layer}
+                  className="flex items-start gap-2 mb-1 min-w-0"
+                  style={{ paddingLeft: `${Math.min(i, 8) * 8}px` }}
+                >
+                  <span className="text-accent w-3 shrink-0">{i === 0 ? "●" : "→"}</span>
+                  <span className="text-text-secondary break-words">{layer}</span>
                 </div>
               ))}
             </div>
@@ -100,6 +104,10 @@ export default function About() {
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-yellow" />
               Learning
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-text-muted" />
+              Familiar
             </span>
           </div>
 
@@ -145,9 +153,9 @@ export default function About() {
                   <h3 className="text-sm font-semibold text-text-primary mb-2">{entry.title}</h3>
                   <ul className="space-y-1">
                     {entry.items.map((item) => (
-                      <li key={item} className="text-sm text-text-muted flex items-center gap-2">
-                        <span className="text-text-muted/50">·</span>
-                        {item}
+                      <li key={item} className="text-sm text-text-muted flex items-start gap-2 min-w-0">
+                        <span className="text-text-muted/50 shrink-0">·</span>
+                        <span className="break-words">{item}</span>
                       </li>
                     ))}
                   </ul>

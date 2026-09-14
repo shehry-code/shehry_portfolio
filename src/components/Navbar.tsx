@@ -52,7 +52,9 @@ export default function Navbar() {
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="md:hidden p-2 text-text-secondary hover:text-text-primary transition-colors"
-            aria-label="Toggle menu"
+            aria-label={isOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isOpen}
+            aria-controls="mobile-navigation"
           >
             {isOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -61,7 +63,10 @@ export default function Navbar() {
 
       {/* Mobile Navigation */}
       {isOpen && (
-        <div className="md:hidden border-t border-border bg-bg-primary/95 backdrop-blur-md">
+        <div
+          id="mobile-navigation"
+          className="md:hidden border-t border-border bg-bg-primary/95 backdrop-blur-md"
+        >
           <div className="px-4 py-3 space-y-1">
             {navLinks.map((link) => (
               <Link

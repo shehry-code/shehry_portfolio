@@ -28,10 +28,12 @@ export default function Projects() {
         </div>
 
         {/* Category Filter */}
-        <div className="flex flex-wrap gap-2 mb-8">
+        <div className="flex flex-wrap gap-2 mb-8" role="group" aria-label="Filter projects by category">
           {categories.map((cat) => (
             <button
               key={cat}
+              type="button"
+              aria-pressed={activeCategory === cat}
               onClick={() => setActiveCategory(cat)}
               className={`px-3 py-1.5 text-xs font-mono rounded-md border transition-colors ${
                 activeCategory === cat

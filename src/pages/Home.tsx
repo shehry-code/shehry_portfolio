@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Cpu, Terminal, Shield, Search, Code, Globe } from "lucide-react";
 import Hero from "../components/Hero";
-import { currentFocus, projects, blogPosts } from "../data/content";
+import { currentFocus, projects, blogPosts, timeline } from "../data/content";
 
 const iconMap: Record<string, React.ReactNode> = {
   cpu: <Cpu size={16} />,
@@ -117,7 +117,7 @@ export default function Home() {
           <div className="flex items-end justify-between mb-8">
             <div>
               <p className="text-xs font-mono text-accent uppercase tracking-wider mb-2">Blog</p>
-              <h2 className="text-2xl font-bold text-text-primary">Latest Writing</h2>
+              <h2 className="text-2xl font-bold text-text-primary">Featured Writing</h2>
             </div>
             <Link
               to="/blog"
@@ -175,16 +175,12 @@ export default function Home() {
           <div className="relative">
             <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
             <div className="space-y-8">
-              {[
-                { year: "2024", title: "Started Computer Science", desc: "Python, web fundamentals, Linux basics" },
-                { year: "2025", title: "Systems & Networking", desc: "Linux deep dive, C programming, networking" },
-                { year: "2026", title: "Architecture & Security", desc: "Computer architecture, assembly, cybersecurity research" },
-              ].map((entry) => (
+              {timeline.slice(0, 3).map((entry) => (
                 <div key={entry.year} className="relative pl-10">
                   <div className="absolute left-2.5 top-1.5 w-3 h-3 rounded-full border-2 border-accent bg-bg-primary" />
                   <div className="text-xs font-mono text-accent mb-1">{entry.year}</div>
                   <h3 className="text-sm font-semibold text-text-primary mb-1">{entry.title}</h3>
-                  <p className="text-sm text-text-muted">{entry.desc}</p>
+                  <p className="text-sm text-text-muted">{entry.items.join(", ")}</p>
                 </div>
               ))}
             </div>

@@ -50,6 +50,7 @@ export default function Hero() {
                 href={profile.github}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="GitHub"
                 className="flex items-center gap-2 text-sm text-text-muted hover:text-accent transition-colors"
               >
                 <Github size={16} />
@@ -59,6 +60,7 @@ export default function Hero() {
                 href={profile.linkedin}
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="LinkedIn"
                 className="flex items-center gap-2 text-sm text-text-muted hover:text-accent transition-colors"
               >
                 <Linkedin size={16} />
@@ -66,6 +68,7 @@ export default function Hero() {
               </a>
               <a
                 href={`mailto:${profile.email}`}
+                aria-label="Email"
                 className="flex items-center gap-2 text-sm text-text-muted hover:text-accent transition-colors"
               >
                 <Mail size={16} />

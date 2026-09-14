@@ -44,8 +44,10 @@ export default function Notes() {
         {/* Search & Filters */}
         <div className="mb-8 space-y-4">
           <div className="relative">
+            <label htmlFor="notes-search" className="sr-only">Search notes</label>
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
+              id="notes-search"
               type="text"
               placeholder="Search notes..."
               value={searchQuery}
@@ -54,10 +56,12 @@ export default function Notes() {
             />
           </div>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter notes by category">
             {categories.map((cat) => (
               <button
                 key={cat}
+                type="button"
+                aria-pressed={activeCategory === cat}
                 onClick={() => setActiveCategory(cat)}
                 className={`px-3 py-1.5 text-xs font-mono rounded-md border transition-colors ${
                   activeCategory === cat

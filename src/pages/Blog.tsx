@@ -53,8 +53,10 @@ export default function Blog() {
         <div className="mb-8 space-y-4">
           {/* Search */}
           <div className="relative">
+            <label htmlFor="blog-search" className="sr-only">Search posts</label>
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
             <input
+              id="blog-search"
               type="text"
               placeholder="Search posts..."
               value={searchQuery}
@@ -64,10 +66,12 @@ export default function Blog() {
           </div>
 
           {/* Category Filter */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Filter posts by category">
             {categories.map((cat) => (
               <button
                 key={cat}
+                type="button"
+                aria-pressed={activeCategory === cat}
                 onClick={() => { setActiveCategory(cat); setActiveTag(null); }}
                 className={`px-3 py-1.5 text-xs font-mono rounded-md border transition-colors ${
                   activeCategory === cat
@@ -81,10 +85,12 @@ export default function Blog() {
           </div>
 
           {/* Tag Filter */}
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter posts by tag">
             {allTags.map((tag) => (
               <button
                 key={tag}
+                type="button"
+                aria-pressed={activeTag === tag}
                 onClick={() => setActiveTag(activeTag === tag ? null : tag)}
                 className={`px-2 py-1 text-xs rounded transition-colors ${
                   activeTag === tag

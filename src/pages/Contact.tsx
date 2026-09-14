@@ -8,9 +8,8 @@ export default function Contact() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In production, this would send to a backend/email service
-    // For now, we'll open the user's email client
-    const mailtoLink = `mailto:${profile.email}?subject=${encodeURIComponent(formData.subject)}&body=${encodeURIComponent(`From: ${formData.name}\n\n${formData.message}`)}`;
+    const mailtoBody = `From: ${formData.name}\nEmail: ${formData.email}\n\n${formData.message}`;
+    const mailtoLink = `mailto:${profile.email}?subject=${encodeURIComponent(formData.subject)}&body=${encodeURIComponent(mailtoBody)}`;
     window.location.href = mailtoLink;
     setSubmitted(true);
   };
@@ -87,10 +86,10 @@ export default function Contact() {
           {/* Contact Form */}
           <div className="lg:col-span-3">
             {submitted ? (
-              <div className="p-8 rounded-lg border border-green/20 bg-green/5 text-center">
-                <p className="text-green font-medium mb-2">Message prepared!</p>
+              <div className="p-8 rounded-lg border border-green/20 bg-green/5 text-center" aria-live="polite">
+                <p className="text-green font-medium mb-2">Email draft prepared</p>
                 <p className="text-sm text-text-muted">
-                  Your email client should have opened. If not, you can email me directly at{" "}
+                  Your email client should have opened with the message ready to send. If not, you can email me directly at{" "}
                   <a href={`mailto:${profile.email}`} className="text-accent hover:underline">
                     {profile.email}
                   </a>
@@ -107,6 +106,7 @@ export default function Contact() {
                       id="name"
                       type="text"
                       required
+                      autoComplete="name"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="w-full px-3 py-2.5 text-sm bg-bg-card border border-border rounded-md text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/30 transition-colors"
@@ -121,6 +121,7 @@ export default function Contact() {
                       id="email"
                       type="email"
                       required
+                      autoComplete="email"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                       className="w-full px-3 py-2.5 text-sm bg-bg-card border border-border rounded-md text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/30 transition-colors"
@@ -137,6 +138,7 @@ export default function Contact() {
                     id="subject"
                     type="text"
                     required
+                    autoComplete="off"
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                     className="w-full px-3 py-2.5 text-sm bg-bg-card border border-border rounded-md text-text-primary placeholder:text-text-muted focus:outline-none focus:border-accent/30 transition-colors"

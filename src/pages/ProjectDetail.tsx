@@ -77,7 +77,7 @@ export default function ProjectDetail() {
 
         {/* Technologies */}
         <div className="mb-10 p-5 rounded-lg border border-border bg-bg-card">
-          <h3 className="text-sm font-medium text-text-primary mb-3">Technologies</h3>
+          <h2 className="text-sm font-medium text-text-primary mb-3">Technologies</h2>
           <div className="flex flex-wrap gap-2">
             {project.technologies.map((tech) => (
               <span key={tech} className="px-3 py-1 text-xs font-mono text-accent border border-accent/20 rounded bg-accent-glow">
