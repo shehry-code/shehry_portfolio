@@ -134,7 +134,7 @@ export const projects: Project[] = [
     technologies: ["NASM", "x86 Assembly", "Linux", "QEMU", "Make"],
     category: "Systems",
     status: "Active",
-    github: "https://github.com/shehry/mini-os",
+    github: "https://github.com/shehry-code/MIni-operating-system-in-assembly-.git",
     featured: true,
     date: "2026",
   },

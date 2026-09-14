@@ -34,7 +34,7 @@ export default function ProjectDetail() {
         <div className="mb-10">
           <div className="flex items-start justify-between gap-4 mb-4">
             <div>
-              <span className="text-xs font-mono text-accent uppercase tracking-wider">{project.category}</span>
+              <span className="text-xs font-mono text-accent uppercase tracking-wider">{project .category}</span>
               <h1 className="text-3xl sm:text-4xl font-bold text-text-primary mt-2">{project.title}</h1>
             </div>
             <span className={`text-xs px-2.5 py-1 rounded-full border whitespace-nowrap ${
