@@ -10,10 +10,14 @@ export default function Blog() {
 
   const categories = ["All", ...new Set(blogPosts.map((p) => p.category))];
   const allTags = [...new Set(blogPosts.flatMap((p) => p.tags))];
+  const showFeaturedSection = !searchQuery && activeCategory === "All" && !activeTag;
+  const featured = blogPosts.filter((p) => p.featured && !p.draft).slice(0, 2);
+  const featuredSlugs = new Set(featured.map((p) => p.slug));
 
   const filtered = useMemo(() => {
     return blogPosts
       .filter((p) => !p.draft)
+      .filter((p) => !(showFeaturedSection && featuredSlugs.has(p.slug)))
       .filter((p) => {
         if (activeCategory !== "All" && p.category !== activeCategory) return false;
         if (activeTag && !p.tags.includes(activeTag)) return false;
@@ -28,9 +32,7 @@ export default function Blog() {
         return true;
       })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [searchQuery, activeCategory, activeTag]);
-
-  const featured = blogPosts.filter((p) => p.featured && !p.draft);
+  }, [searchQuery, activeCategory, activeTag, showFeaturedSection, featuredSlugs]);
 
   return (
     <div className="min-h-screen pt-20">
@@ -46,34 +48,6 @@ export default function Blog() {
             about how computers work under the hood.
           </p>
         </div>
-
-        {/* Featured Posts */}
-        {featured.length > 0 && !searchQuery && activeCategory === "All" && !activeTag && (
-          <div className="mb-10">
-            <h2 className="text-sm font-mono text-accent uppercase tracking-wider mb-4">Featured</h2>
-            <div className="space-y-3">
-              {featured.slice(0, 2).map((post) => (
-                <Link
-                  key={post.slug}
-                  to={`/blog/${post.slug}`}
-                  className="group block p-5 rounded-lg border border-accent/10 bg-accent-glow/30 hover:border-accent/20 transition-all"
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <span className="text-xs font-mono text-accent">{post.category}</span>
-                    <span className="text-xs text-text-muted flex items-center gap-1">
-                      <Clock size={10} />
-                      {post.readingTime} min
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-text-primary group-hover:text-accent transition-colors mb-1">
-                    {post.title}
-                  </h3>
-                  <p className="text-sm text-text-muted">{post.description}</p>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Search & Filters */}
         <div className="mb-8 space-y-4">
@@ -123,6 +97,34 @@ export default function Blog() {
             ))}
           </div>
         </div>
+
+        {/* Featured Posts */}
+        {featured.length > 0 && showFeaturedSection && (
+          <div className="mb-10">
+            <h2 className="text-sm font-mono text-accent uppercase tracking-wider mb-4">Featured</h2>
+            <div className="space-y-3">
+              {featured.map((post) => (
+                <Link
+                  key={post.slug}
+                  to={`/blog/${post.slug}`}
+                  className="group block p-5 rounded-lg border border-accent/10 bg-accent-glow/30 hover:border-accent/20 transition-all"
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-xs font-mono text-accent">{post.category}</span>
+                    <span className="text-xs text-text-muted flex items-center gap-1">
+                      <Clock size={10} />
+                      {post.readingTime} min
+                    </span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-text-primary group-hover:text-accent transition-colors mb-1">
+                    {post.title}
+                  </h3>
+                  <p className="text-sm text-text-muted">{post.description}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Posts List */}
         <div className="space-y-3">
