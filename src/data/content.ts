@@ -9,12 +9,12 @@ export const profile = {
   tagline: "Building, breaking, and studying computer systems to understand what happens under the hood.",
   description: "Computer Science student and aspiring cybersecurity engineer. I explore systems from the lowest level upward — from transistors and digital logic, through assembly and CPU architecture, up to operating systems and security.",
   email: "shehry@example.com",
-  github: "https://github.com/shehry",
-  linkedin: "https://linkedin.com/in/shehry",
-  location: "Earth",
+  github: "https://github.com/shehry-code",
+  linkedin: "https://www.linkedin.com/in/muhammad-shehriyar-94a966422/",
+  location: "Peshawar, Pakistan",
   education: {
     degree: "Bachelor of Computer Science",
-    institution: "University",
+    institution: "CECOS University of IT and Emerging Sciences",
     period: "2024 — Present",
   },
 };
