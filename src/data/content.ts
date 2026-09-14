@@ -8,7 +8,7 @@ export const profile = {
   subtitle: "Cybersecurity • Systems • Computer Architecture",
   tagline: "Building, breaking, and studying computer systems to understand what happens under the hood.",
   description: "Computer Science student and aspiring cybersecurity engineer. I explore systems from the lowest level upward — from transistors and digital logic, through assembly and CPU architecture, up to operating systems and security.",
-  email: "shehry@example.com",
+  email: "shehrimary@gmail.com",
   github: "https://github.com/shehry-code",
   linkedin: "https://www.linkedin.com/in/muhammad-shehriyar-94a966422/",
   location: "Peshawar, Pakistan",
