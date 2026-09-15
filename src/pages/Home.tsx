@@ -1,192 +1,212 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, Cpu, Terminal, Shield, Search, Code, Globe } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import Hero from "../components/Hero";
-import { currentFocus, projects, blogPosts, timeline } from "../data/content";
+import { profile, projects, blogPosts, timeline } from "../data/content";
 
-const iconMap: Record<string, React.ReactNode> = {
-  cpu: <Cpu size={16} />,
-  terminal: <Terminal size={16} />,
-  shield: <Shield size={16} />,
-  search: <Search size={16} />,
-  code: <Code size={16} />,
-  globe: <Globe size={16} />,
-};
+const architectureLayers = [
+  { label: "Application", detail: "Software interactions and interfaces" },
+  { label: "Programming Languages & Frameworks", detail: "Abstractions that shape how we build" },
+  { label: "Compilers & Interpreters", detail: "Turning intent into executable instructions" },
+  { label: "Assembly Language", detail: "Low-level instructions and control flow" },
+  { label: "Instruction Set Architecture (ISA)", detail: "The contract between hardware and software" },
+  { label: "CPU Microarchitecture", detail: "Pipelines, caches, and execution units" },
+  { label: "Memory System", detail: "Data movement, latency, and hierarchy" },
+  { label: "Digital Logic & Circuits", detail: "Gates, state, and computation" },
+  { label: "Transistors", detail: "The physical foundation of computation" },
+];
 
 export default function Home() {
   const featuredProjects = projects.filter((p) => p.featured).slice(0, 3);
   const featuredPosts = blogPosts.filter((p) => p.featured && !p.draft).slice(0, 3);
 
   return (
-    <div>
+    <div className="home-page-shell">
       <Hero />
 
-      {/* Current Focus */}
-      <section className="border-t border-border py-16 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mb-8">
-            <p className="text-xs font-mono text-accent uppercase tracking-wider mb-2">Currently Exploring</p>
-            <h2 className="text-2xl font-bold text-text-primary">What I'm Working On</h2>
-          </div>
+      <main>
+        <section className="home-section">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="section-header">
+              <p className="section-kicker">Systems</p>
+              <h2 className="section-title">From Transistors to Systems</h2>
+            </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-            {currentFocus.map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center gap-2 px-4 py-3 rounded-lg border border-border bg-bg-card hover:border-accent/20 transition-colors group"
-              >
-                <span className="text-accent group-hover:scale-110 transition-transform">
-                  {iconMap[item.icon]}
-                </span>
-                <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">
-                  {item.label}
-                </span>
+            <div className="architecture-layout">
+              <div className="architecture-copy">
+                <p>
+                  I study the stack from the lowest level upward — from digital logic and transistors to CPU design, memory, operating systems, and security.
+                </p>
+                <p>
+                  {profile.description}
+                </p>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* Featured Projects */}
-      <section className="border-t border-border py-16 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <p className="text-xs font-mono text-accent uppercase tracking-wider mb-2">Projects</p>
-              <h2 className="text-2xl font-bold text-text-primary">Featured Work</h2>
+              <div className="architecture-visual" aria-label="Computing layers from transistors to systems">
+                {architectureLayers.map((layer, index) => (
+                  <div
+                    key={layer.label}
+                    className={`architecture-layer ${index === 0 ? "is-highlight" : ""}`}
+                    tabIndex={0}
+                    aria-label={`${layer.label}: ${layer.detail}`}
+                  >
+                    <span className="architecture-node" aria-hidden="true" />
+                    <div className="architecture-label">
+                      <span>{layer.label}</span>
+                      <small>{layer.detail}</small>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <Link
-              to="/projects"
-              className="hidden sm:flex items-center gap-1 text-sm text-text-muted hover:text-accent transition-colors"
-            >
-              View all <ArrowRight size={14} />
-            </Link>
           </div>
+        </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {featuredProjects.map((project) => (
+        <section className="home-section">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="flex items-end justify-between gap-4 mb-8">
+              <div>
+                <p className="section-kicker">Projects</p>
+                <h2 className="section-title">Things I&apos;ve Built</h2>
+              </div>
               <Link
-                key={project.slug}
-                to={`/projects/${project.slug}`}
-                className="group block p-5 rounded-lg border border-border bg-bg-card hover:border-accent/20 transition-all hover:-translate-y-0.5"
+                to="/projects"
+                className="hidden items-center gap-1 text-sm text-text-muted transition-colors hover:text-accent sm:flex"
               >
-                <div className="flex items-start justify-between mb-3">
-                  <h3 className="text-base font-semibold text-text-primary group-hover:text-accent transition-colors">
-                    {project.title}
-                  </h3>
-                  <span className={`text-xs px-2 py-0.5 rounded-full border ${
-                    project.status === "Active" ? "border-green/30 text-green" :
-                    project.status === "Planned" ? "border-yellow/30 text-yellow" :
-                    "border-text-muted/30 text-text-muted"
-                  }`}>
-                    {project.status}
-                  </span>
-                </div>
-                <p className="text-sm text-text-muted mb-4 line-clamp-2">
-                  {project.description}
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {project.technologies.slice(0, 3).map((tech) => (
-                    <span key={tech} className="text-xs px-2 py-0.5 rounded bg-bg-tertiary text-text-muted font-mono">
-                      {tech}
-                    </span>
-                  ))}
-                  {project.technologies.length > 3 && (
-                    <span className="text-xs px-2 py-0.5 text-text-muted">
-                      +{project.technologies.length - 3}
-                    </span>
-                  )}
-                </div>
+                View all <ArrowRight size={14} />
               </Link>
-            ))}
-          </div>
-
-          <div className="mt-6 sm:hidden">
-            <Link
-              to="/projects"
-              className="flex items-center justify-center gap-1 text-sm text-text-muted hover:text-accent transition-colors py-2"
-            >
-              View all projects <ArrowRight size={14} />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Latest Blog Posts */}
-      <section className="border-t border-border py-16 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="flex items-end justify-between mb-8">
-            <div>
-              <p className="text-xs font-mono text-accent uppercase tracking-wider mb-2">Blog</p>
-              <h2 className="text-2xl font-bold text-text-primary">Featured Writing</h2>
             </div>
-            <Link
-              to="/blog"
-              className="hidden sm:flex items-center gap-1 text-sm text-text-muted hover:text-accent transition-colors"
-            >
-              All posts <ArrowRight size={14} />
-            </Link>
-          </div>
 
-          <div className="space-y-4">
-            {featuredPosts.map((post) => (
-              <Link
-                key={post.slug}
-                to={`/blog/${post.slug}`}
-                className="group block p-5 rounded-lg border border-border bg-bg-card hover:border-accent/20 transition-all"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-                  <h3 className="text-base font-semibold text-text-primary group-hover:text-accent transition-colors">
-                    {post.title}
-                  </h3>
-                  <span className="text-xs text-text-muted font-mono whitespace-nowrap">
-                    {new Date(post.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
-                  </span>
-                </div>
-                <p className="text-sm text-text-muted mb-3">
-                  {post.description}
-                </p>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-accent font-mono">{post.category}</span>
-                  <span className="text-xs text-text-muted">{post.readingTime} min read</span>
-                </div>
-              </Link>
-            ))}
-          </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {featuredProjects.map((project) => (
+                <Link
+                  key={project.slug}
+                  to={`/projects/${project.slug}`}
+                  className="group block rounded-xl border border-border bg-bg-card p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-accent/25"
+                >
+                  <div className="mb-3 flex items-start justify-between gap-3">
+                    <h3 className="text-base font-semibold text-text-primary transition-colors group-hover:text-accent">
+                      {project.title}
+                    </h3>
+                    <span
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] ${
+                        project.status === "Active"
+                          ? "border-green/30 text-green"
+                          : project.status === "Planned"
+                            ? "border-yellow/30 text-yellow"
+                            : "border-text-muted/30 text-text-muted"
+                      }`}
+                    >
+                      {project.status}
+                    </span>
+                  </div>
 
-          <div className="mt-6 sm:hidden">
-            <Link
-              to="/blog"
-              className="flex items-center justify-center gap-1 text-sm text-text-muted hover:text-accent transition-colors py-2"
-            >
-              All blog posts <ArrowRight size={14} />
-            </Link>
-          </div>
-        </div>
-      </section>
+                  <p className="mb-4 text-sm leading-6 text-text-muted">{project.description}</p>
 
-      {/* Engineering Timeline Preview */}
-      <section className="border-t border-border py-16 sm:py-20">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mb-8">
-            <p className="text-xs font-mono text-accent uppercase tracking-wider mb-2">Journey</p>
-            <h2 className="text-2xl font-bold text-text-primary">Learning Path</h2>
-          </div>
-
-          <div className="relative">
-            <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
-            <div className="space-y-8">
-              {timeline.slice(0, 3).map((entry) => (
-                <div key={entry.year} className="relative pl-10">
-                  <div className="absolute left-2.5 top-1.5 w-3 h-3 rounded-full border-2 border-accent bg-bg-primary" />
-                  <div className="text-xs font-mono text-accent mb-1">{entry.year}</div>
-                  <h3 className="text-sm font-semibold text-text-primary mb-1">{entry.title}</h3>
-                  <p className="text-sm text-text-muted">{entry.items.join(", ")}</p>
-                </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {project.technologies.slice(0, 3).map((tech) => (
+                      <span
+                        key={tech}
+                        className="rounded bg-bg-tertiary px-2 py-1 font-mono text-[10px] uppercase tracking-[0.08em] text-text-muted"
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                    {project.technologies.length > 3 && (
+                      <span className="text-xs text-text-muted">+{project.technologies.length - 3}</span>
+                    )}
+                  </div>
+                </Link>
               ))}
             </div>
+
+            <div className="mt-6 sm:hidden">
+              <Link
+                to="/projects"
+                className="flex items-center justify-center gap-1 py-2 text-sm text-text-muted transition-colors hover:text-accent"
+              >
+                View all projects <ArrowRight size={14} />
+              </Link>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        <section className="home-section">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-8 flex items-end justify-between gap-4">
+              <div>
+                <p className="section-kicker">Writing</p>
+                <h2 className="section-title">Featured Writing</h2>
+              </div>
+              <Link
+                to="/blog"
+                className="hidden items-center gap-1 text-sm text-text-muted transition-colors hover:text-accent sm:flex"
+              >
+                All posts <ArrowRight size={14} />
+              </Link>
+            </div>
+
+            <div className="space-y-4">
+              {featuredPosts.map((post) => (
+                <Link
+                  key={post.slug}
+                  to={`/blog/${post.slug}`}
+                  className="group block rounded-xl border border-border bg-bg-card p-5 transition-colors hover:border-accent/25"
+                >
+                  <div className="mb-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <h3 className="text-base font-semibold text-text-primary transition-colors group-hover:text-accent">
+                      {post.title}
+                    </h3>
+                    <span className="whitespace-nowrap font-mono text-xs text-text-muted">
+                      {new Date(post.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                  </div>
+
+                  <p className="mb-3 text-sm leading-6 text-text-muted">{post.description}</p>
+
+                  <div className="flex items-center gap-3">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-accent">{post.category}</span>
+                    <span className="text-xs text-text-muted">{post.readingTime} min read</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+            <div className="mt-6 sm:hidden">
+              <Link
+                to="/blog"
+                className="flex items-center justify-center gap-1 py-2 text-sm text-text-muted transition-colors hover:text-accent"
+              >
+                All blog posts <ArrowRight size={14} />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        <section className="home-section">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-8">
+              <p className="section-kicker">Journey</p>
+              <h2 className="section-title">Engineering Timeline</h2>
+            </div>
+
+            <div className="timeline-wrap">
+              <div className="timeline-rail" aria-hidden="true" />
+              <div className="space-y-8">
+                {timeline.slice(0, 3).map((entry) => (
+                  <div key={entry.year} className="timeline-item">
+                    <div className="timeline-dot" aria-hidden="true" />
+                    <div className="timeline-content">
+                      <div className="timeline-year">{entry.year}</div>
+                      <h3 className="timeline-title">{entry.title}</h3>
+                      <p className="timeline-text">{entry.items.join(" • ")}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }
