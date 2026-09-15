@@ -6,13 +6,38 @@
     <title>Shehry — Computer Science • Cybersecurity • Systems</title>
     <meta name="description" content="Personal engineering portfolio of Shehry. Computer Science student exploring cybersecurity, systems programming, computer architecture, and low-level computing." />
     <meta name="author" content="Shehry" />
-    <meta property="og:title" content="Shehry — Engineering Portfolio" />
-    <meta property="og:description" content="Building, breaking, and studying computer systems to understand what happens under the hood." />
+    <meta property="og:title" content="Shehry — Computer Science • Cybersecurity • Systems" />
+    <meta property="og:description" content="Computer Science student exploring systems, Linux internals, networking, reverse engineering, and cybersecurity." />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://shehry-portfolio.vercel.app/" />
+    <meta property="og:image" content="https://shehry-portfolio.vercel.app/og-image.svg" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Shehry — Engineering Portfolio" />
-    <meta name="twitter:description" content="Computer Science • Cybersecurity • Systems" />
+    <meta name="twitter:title" content="Shehry — Computer Science • Cybersecurity • Systems" />
+    <meta name="twitter:description" content="Computer Science student exploring systems, Linux internals, networking, reverse engineering, and cybersecurity." />
+    <meta name="twitter:image" content="https://shehry-portfolio.vercel.app/og-image.svg" />
     <meta name="theme-color" content="#0a0a0f" />
+    <link rel="canonical" href="https://shehry-portfolio.vercel.app/" />
+    <script>
+      (() => {
+        try {
+          const STORAGE_KEY = "portfolio-theme";
+          const root = document.documentElement;
+          const storedTheme = window.localStorage.getItem(STORAGE_KEY);
+          const theme = storedTheme === "light" ? "light" : "dark";
+
+          root.setAttribute("data-theme", theme);
+          root.style.colorScheme = theme;
+
+          const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+          if (metaThemeColor) {
+            metaThemeColor.setAttribute("content", theme === "light" ? "#f5f1ea" : "#0a0a0f");
+          }
+        } catch (error) {
+          document.documentElement.setAttribute("data-theme", "dark");
+          document.documentElement.style.colorScheme = "dark";
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />

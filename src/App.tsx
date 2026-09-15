@@ -1,5 +1,5 @@
 import { HashRouter, Routes, Route, useLocation } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Home from "./pages/Home";
@@ -15,6 +15,19 @@ import Work from "./pages/Work";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 
+type Theme = "dark" | "light";
+
+const THEME_STORAGE_KEY = "portfolio-theme";
+
+function getInitialTheme(): Theme {
+  if (typeof window === "undefined") {
+    return "dark";
+  }
+
+  const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+  return storedTheme === "light" ? "light" : "dark";
+}
+
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -23,11 +36,11 @@ function ScrollToTop() {
   return null;
 }
 
-function AppContent() {
+function AppContent({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void; }) {
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary">
       <ScrollToTop />
-      <Navbar />
+      <Navbar theme={theme} onToggleTheme={onToggleTheme} />
       <main className="flex-1">
         <Routes>
           <Route path="/" element={<Home />} />
@@ -50,9 +63,27 @@ function AppContent() {
 }
 
 export default function App() {
+  const [theme, setTheme] = useState<Theme>(getInitialTheme);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute("data-theme", theme);
+    root.style.colorScheme = theme;
+    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+      metaThemeColor.setAttribute("content", theme === "light" ? "#f5f1ea" : "#0a0a0f");
+    }
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"));
+  };
+
   return (
     <HashRouter>
-      <AppContent />
+      <AppContent theme={theme} onToggleTheme={toggleTheme} />
     </HashRouter>
   );
 }

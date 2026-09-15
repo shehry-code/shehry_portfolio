@@ -1,0 +1,70 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0A0A0F"/>
+      <stop offset="1" stop-color="#10131A"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="184" y1="144" x2="930" y2="462" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#60A5FA"/>
+      <stop offset="1" stop-color="#93C5FD"/>
+    </linearGradient>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M30 0H0V30" stroke="#60A5FA" stroke-opacity="0.08"/>
+    </pattern>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+
+  <g opacity="0.9">
+    <circle cx="159" cy="116" r="6" fill="#F87171"/>
+    <circle cx="186" cy="116" r="6" fill="#FBBF24"/>
+    <circle cx="213" cy="116" r="6" fill="#34D399"/>
+  </g>
+
+  <rect x="86" y="80" width="1028" height="474" rx="18" fill="#11151C" stroke="#1E293B"/>
+  <rect x="86" y="80" width="1028" height="52" rx="18" fill="#171C25" stroke="#1E293B"/>
+
+  <text x="122" y="120" fill="#A1A1AA" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" letter-spacing="0.12em">~/shehry</text>
+
+  <g opacity="0.92">
+    <text x="122" y="220" fill="#34D399" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="22">$</text>
+    <text x="152" y="220" fill="#E4E4E7" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="22">whoami</text>
+    <text x="122" y="270" fill="#E4E4E7" font-family="Inter, Arial, sans-serif" font-size="76" font-weight="700" letter-spacing="0.04em">SHEHRY</text>
+
+    <text x="122" y="330" fill="#A1A1AA" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="24" letter-spacing="0.12em">COMPUTER SCIENCE • SYSTEMS • SECURITY</text>
+
+    <rect x="122" y="358" width="490" height="2" fill="url(#accent)" opacity="0.9"/>
+
+    <text x="122" y="410" fill="#C7D2FE" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="24">Computer Architecture</text>
+    <text x="472" y="410" fill="#A1A1AA" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="24">·</text>
+    <text x="494" y="410" fill="#C7D2FE" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="24">Operating Systems</text>
+
+    <text x="122" y="455" fill="#C7D2FE" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="24">Linux</text>
+    <text x="248" y="455" fill="#A1A1AA" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="24">·</text>
+    <text x="270" y="455" fill="#C7D2FE" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="24">Cybersecurity</text>
+    <text x="560" y="455" fill="#A1A1AA" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="24">·</text>
+    <text x="582" y="455" fill="#C7D2FE" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace" font-size="24">Reverse Engineering</text>
+  </g>
+
+  <g opacity="0.9">
+    <rect x="820" y="180" width="220" height="220" rx="18" fill="#101822" stroke="#1E293B"/>
+    <path d="M860 314C860 260.98 903.98 217 957 217H962C1015.02 217 1059 260.98 1059 314V334C1059 387.02 1015.02 431 962 431H957C903.98 431 860 387.02 860 334V314Z" fill="#0D1B2A" stroke="#60A5FA" stroke-opacity="0.6"/>
+    <path d="M892 343H1028" stroke="#60A5FA" stroke-width="4" stroke-linecap="round"/>
+    <path d="M892 370H1006" stroke="#60A5FA" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
+    <path d="M892 397H980" stroke="#60A5FA" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
+    <circle cx="897" cy="245" r="18" fill="#60A5FA" fill-opacity="0.18"/>
+    <circle cx="930" cy="245" r="18" fill="#60A5FA" fill-opacity="0.28"/>
+    <circle cx="963" cy="245" r="18" fill="#60A5FA" fill-opacity="0.42"/>
+    <path d="M900 233L930 282L975 236" stroke="#60A5FA" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M906 188H1018" stroke="#60A5FA" stroke-opacity="0.4" stroke-width="2"/>
+    <path d="M906 182V194" stroke="#60A5FA" stroke-opacity="0.4" stroke-width="2"/>
+    <path d="M1018 182V194" stroke="#60A5FA" stroke-opacity="0.4" stroke-width="2"/>
+  </g>
+
+  <g opacity="0.72">
+    <rect x="920" y="472" width="160" height="20" rx="10" fill="#0F172A" stroke="#1E293B"/>
+    <rect x="940" y="478" width="98" height="8" rx="4" fill="#60A5FA"/>
+    <circle cx="1046" cy="482" r="6" fill="#34D399"/>
+  </g>
+</svg>
