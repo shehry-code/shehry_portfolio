@@ -300,6 +300,11 @@ const noteContent = import.meta.glob(
   }
 ) as Record<string, string>;
 
+export interface NotePage {
+  image?: string;
+  alt: string;
+}
+
 export interface Note {
   slug: string;
   title: string;
@@ -307,7 +312,7 @@ export interface Note {
   date: string;
   tags: string[];
   category: string;
-  content: string;
+  pages: NotePage[];
 }
 
 export const notes: Note[] = [
@@ -318,7 +323,7 @@ export const notes: Note[] = [
     date: "2026-05-10",
     tags: ["Digital Logic", "Hardware", "Transistors"],
     category: "Digital Logic",
-    content: noteContent["../content/notes/mos-transistors.md"],
+    pages: [],
   },
   {
     slug: "flip-flops",
@@ -327,7 +332,7 @@ export const notes: Note[] = [
     date: "2026-05-15",
     tags: ["Digital Logic", "Sequential Logic", "Memory"],
     category: "Digital Logic",
-    content: noteContent["../content/notes/flip-flops.md"],
+    pages: [],
   },
   {
     slug: "cpu-registers-note",
@@ -336,7 +341,7 @@ export const notes: Note[] = [
     date: "2026-06-01",
     tags: ["x86", "Assembly", "CPU", "Registers"],
     category: "Computer Architecture",
-    content: noteContent["../content/notes/cpu-registers-note.md"],
+    pages: [],
   },
   {
     slug: "dram-row-buffer",
@@ -345,7 +350,7 @@ export const notes: Note[] = [
     date: "2026-06-20",
     tags: ["DRAM", "Memory", "Computer Architecture"],
     category: "Computer Architecture",
-    content: noteContent["../content/notes/dram-row-buffer.md"],
+    pages: [],
   },
   {
     slug: "tcp-vs-udp",
@@ -354,7 +359,7 @@ export const notes: Note[] = [
     date: "2026-07-05",
     tags: ["Networking", "TCP", "UDP", "Protocols"],
     category: "Networking",
-    content: noteContent["../content/notes/tcp-vs-udp.md"],
+    pages: [],
   },
   {
     slug: "linux-process-states",
@@ -363,7 +368,7 @@ export const notes: Note[] = [
     date: "2026-07-20",
     tags: ["Linux", "Operating Systems", "Processes"],
     category: "Operating Systems",
-        content: noteContent["../content/notes/linux-process-states.md"],
+    pages: [],
   },
 ];
 
