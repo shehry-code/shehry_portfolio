@@ -285,7 +285,21 @@ export const blogPosts: BlogPost[] = [
     readingTime: 5,
     content: blogContent["../content/blogs/why-learn-computer-architecture.md"],
   },
+  {
+    slug: "How user define functions work at assembly level",
+    title: "How User-Defined Functions Work at the Assembly Level",
+    description: "Exploring the mechanics of function calls and returns in assembly language.And how stack is used to manage function calls.",
+    date: "2026-10-01",
+    tags: ["Systems", "Assembly", "Nasm", "CPU"],
+    category: "Systems",
+    featured: true,
+    draft: false,
+    readingTime: 10,
+    content: blogContent["../content/blogs/what-happens-when-program-runs.md"],
+  },
+
 ];
+
 
 // ============================================================
 // NOTES
