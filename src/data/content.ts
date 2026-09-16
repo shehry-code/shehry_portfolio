@@ -295,7 +295,7 @@ export const blogPosts: BlogPost[] = [
     featured: true,
     draft: false,
     readingTime: 10,
-    content: blogContent["../content/blogs/what-happens-when-program-runs.md"],
+    content: blogContent["../content/blogs/how-user-define-functions-work-at-the-assembly-level.md"],
   },
 
 ];
