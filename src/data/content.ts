@@ -249,30 +249,23 @@ export const blogPosts: BlogPost[] = [
     readingTime: 8,
     content: blogContent["../content/blogs/how-dram-stores-data.md"],
   },
-  {
-    slug: "understanding-cpu-registers",
-    title: "Understanding CPU Registers",
-    description: "What CPU registers are, why they exist, and how they form the fastest layer of the memory hierarchy.",
-    date: "2026-07-10",
-    tags: ["Computer Architecture", "CPU", "Registers", "Assembly"],
-    category: "Computer Architecture",
-    featured: false,
-    draft: false,
-    readingTime: 6,
-    content: blogContent["../content/blogs/understanding-cpu-registers.md"],
-  },
+
+
   {
     slug: "what-happens-when-program-runs",
     title: "What Actually Happens When a Program Runs?",
     description: "Tracing the journey of a program from source code to execution — the full stack of abstraction.",
     date: "2026-10-01",
+    updated: "2026-09-17",
     tags: ["Systems", "Compilers", "Operating Systems", "CPU"],
     category: "Systems",
     featured: true,
     draft: false,
-    readingTime: 10,
+    readingTime: 4,
     content: blogContent["../content/blogs/what-happens-when-program-runs.md"],
   },
+
+
   {
     slug: "why-learn-computer-architecture",
     title: "Why I Started Learning Computer Architecture",

@@ -13,6 +13,14 @@ import NoteDetail from "./pages/NoteDetail";
 import Research from "./pages/Research";
 import Work from "./pages/Work";
 import Contact from "./pages/Contact";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminBlogs from "./pages/AdminBlogs";
+import AdminNewBlog from "./pages/AdminNewBlog";
+import AdminEditBlog from "./pages/AdminEditBlog";
+import AdminNotes from "./pages/AdminNotes";
+import AdminNewNote from "./pages/AdminNewNote";
+import AdminResearchPlaceholder from "./pages/AdminResearchPlaceholder";
+import AdminProjectsPlaceholder from "./pages/AdminProjectsPlaceholder";
 import NotFound from "./pages/NotFound";
 
 type Theme = "dark" | "light";
@@ -54,6 +62,14 @@ function AppContent({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () 
           <Route path="/research" element={<Research />} />
           <Route path="/work" element={<Work />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/blogs" element={<AdminBlogs />} />
+          <Route path="/admin/blogs/new" element={<AdminNewBlog />} />
+          <Route path="/admin/blogs/:slug/edit" element={<AdminEditBlog />} />
+          <Route path="/admin/notes" element={<AdminNotes />} />
+          <Route path="/admin/notes/new" element={<AdminNewNote />} />
+          <Route path="/admin/research" element={<AdminResearchPlaceholder />} />
+          <Route path="/admin/projects" element={<AdminProjectsPlaceholder />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

@@ -10,7 +10,7 @@ const TERMINAL_COMMANDS = [
   "about",
   "projects",
   "notes",
-  "research",
+  "writing",
   "date",
   "clear",
 ];
@@ -94,7 +94,7 @@ export default function Hero() {
         { type: "output", value: "about About this portfolio" },
         { type: "output", value: "projects View projects" },
         { type: "output", value: "notes View handwritten notes" },
-        { type: "output", value: "research View research" },
+        { type: "output", value: "writing View featured writing" },
         { type: "output", value: "date Show current date" },
         { type: "output", value: "clear Clear terminal" },
       ]);
@@ -131,7 +131,7 @@ export default function Hero() {
       return;
     }
 
-    if (normalizedCommand === "research") {
+    if (normalizedCommand === "writing") {
       appendEntries([commandEntry, { type: "output", value: "navigating to /research..." }]);
       navigate("/research");
       return;
