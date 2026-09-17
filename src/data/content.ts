@@ -364,7 +364,12 @@ export const notes: Note[] = [
     date: "2026-06-20",
     tags: ["DRAM", "Memory", "Computer Architecture"],
     category: "Computer Architecture",
-    pages: [],
+    pages: [
+      {
+        image: "/notes/dram-row-buffer/dram-row-buffer.jpg",
+        alt: "Handwritten DRAM row buffer note illustration",
+      },
+    ],
   },
   {
     slug: "tcp-vs-udp",

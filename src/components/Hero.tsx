@@ -1,8 +1,221 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { ArrowRight, Github, Linkedin, Mail } from "lucide-react";
 import { currentFocus, profile } from "../data/content";
 
+const TERMINAL_COMMANDS = [
+  "help",
+  "whoami",
+  "focus",
+  "about",
+  "projects",
+  "notes",
+  "research",
+  "date",
+  "clear",
+];
+
+type TerminalEntry = { type: "command" | "output"; value: string };
+
+const STATIC_TERMINAL_ENTRIES: TerminalEntry[] = [
+  { type: "command", value: "whoami" },
+  { type: "output", value: "shehry" },
+  { type: "command", value: "cat focus.txt" },
+  { type: "output", value: "→ cybersecurity" },
+  { type: "output", value: "→ computer architecture" },
+  { type: "output", value: "→ systems programming" },
+  { type: "output", value: "→ reverse engineering" },
+  { type: "command", value: "status" },
+  { type: "output", value: "● learning..." },
+  { type: "output", value: "● building..." },
+  { type: "output", value: "● researching..." },
+];
+
+function formatCurrentDate() {
+  return new Date().toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function getFocusOutput() {
+  return currentFocus.length > 0
+    ? currentFocus
+        .map((item) => item.label.toLowerCase())
+        .filter((item, index, array) => array.indexOf(item) === index)
+    : ["cybersecurity", "computer architecture", "systems programming", "reverse engineering"];
+}
+
 export default function Hero() {
+  const navigate = useNavigate();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [terminalEntries, setTerminalEntries] = useState<TerminalEntry[]>(STATIC_TERMINAL_ENTRIES);
+  const [inputValue, setInputValue] = useState("");
+  const [commandHistory, setCommandHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState<number>(-1);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const appendEntries = (entries: TerminalEntry[]) => {
+    setTerminalEntries((previousEntries) => [...previousEntries, ...entries]);
+  };
+
+  const executeCommand = (rawCommand: string) => {
+    const trimmedCommand = rawCommand.trim();
+
+    if (!trimmedCommand) {
+      return;
+    }
+
+    const normalizedCommand = trimmedCommand.toLowerCase();
+
+    setCommandHistory((previousHistory) => {
+      const lastEntry = previousHistory[previousHistory.length - 1];
+      if (lastEntry === normalizedCommand) {
+        return previousHistory;
+      }
+
+      return [...previousHistory, normalizedCommand];
+    });
+    setHistoryIndex(-1);
+
+    const commandEntry: TerminalEntry = { type: "command", value: trimmedCommand };
+
+    if (normalizedCommand === "help") {
+      appendEntries([
+        commandEntry,
+        { type: "output", value: "Available commands:" },
+        { type: "output", value: "help Show available commands" },
+        { type: "output", value: "whoami Who I am" },
+        { type: "output", value: "focus Current technical focus" },
+        { type: "output", value: "about About this portfolio" },
+        { type: "output", value: "projects View projects" },
+        { type: "output", value: "notes View handwritten notes" },
+        { type: "output", value: "research View research" },
+        { type: "output", value: "date Show current date" },
+        { type: "output", value: "clear Clear terminal" },
+      ]);
+      return;
+    }
+
+    if (normalizedCommand === "whoami") {
+      appendEntries([commandEntry, { type: "output", value: profile.name.toLowerCase() }]);
+      return;
+    }
+
+    if (normalizedCommand === "focus") {
+      appendEntries([
+        commandEntry,
+        ...getFocusOutput().map((focusItem) => ({ type: "output" as const, value: focusItem })),
+      ]);
+      return;
+    }
+
+    if (normalizedCommand === "about") {
+      appendEntries([commandEntry, { type: "output", value: profile.description }]);
+      return;
+    }
+
+    if (normalizedCommand === "projects") {
+      appendEntries([commandEntry, { type: "output", value: "navigating to /projects..." }]);
+      navigate("/projects");
+      return;
+    }
+
+    if (normalizedCommand === "notes") {
+      appendEntries([commandEntry, { type: "output", value: "navigating to /notes..." }]);
+      navigate("/notes");
+      return;
+    }
+
+    if (normalizedCommand === "research") {
+      appendEntries([commandEntry, { type: "output", value: "navigating to /research..." }]);
+      navigate("/research");
+      return;
+    }
+
+    if (normalizedCommand === "date") {
+      appendEntries([commandEntry, { type: "output", value: formatCurrentDate() }]);
+      return;
+    }
+
+    if (normalizedCommand === "clear") {
+      setTerminalEntries([]);
+      setInputValue("");
+      return;
+    }
+
+    appendEntries([
+      commandEntry,
+      { type: "output", value: `command not found: ${trimmedCommand}` },
+    ]);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      executeCommand(inputValue);
+      setInputValue("");
+      return;
+    }
+
+    if (event.key === "Tab") {
+      event.preventDefault();
+      const query = inputValue.trim().toLowerCase();
+
+      if (!query) {
+        return;
+      }
+
+      const matches = TERMINAL_COMMANDS.filter((command) => command.startsWith(query));
+
+      if (matches.length === 1) {
+        setInputValue(matches[0]);
+        return;
+      }
+
+      if (matches.length > 1) {
+        appendEntries([{ type: "output", value: `matches: ${matches.join("  ")}` }]);
+      }
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      if (commandHistory.length === 0) {
+        return;
+      }
+
+      const nextIndex = historyIndex === -1 ? commandHistory.length - 1 : Math.max(0, historyIndex - 1);
+      setInputValue(commandHistory[nextIndex]);
+      setHistoryIndex(nextIndex);
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      if (commandHistory.length === 0 || historyIndex === -1) {
+        if (historyIndex === -1 && inputValue !== "") {
+          setInputValue("");
+        }
+        return;
+      }
+
+      const nextIndex = historyIndex + 1;
+      if (nextIndex >= commandHistory.length) {
+        setInputValue("");
+        setHistoryIndex(-1);
+        return;
+      }
+
+      setInputValue(commandHistory[nextIndex]);
+      setHistoryIndex(nextIndex);
+    }
+  };
+
   return (
     <section className="relative flex min-h-[88vh] items-center grid-bg">
       <div className="mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 lg:px-8">
@@ -78,7 +291,7 @@ export default function Hero() {
           </div>
 
           <div className="animate-fade-in hero-terminal-wrap" style={{ animationDelay: "0.15s" }}>
-            <div className="terminal hero-terminal" aria-label="Terminal with current focus and status">
+            <div className="terminal hero-terminal" aria-label="Portfolio terminal">
               <div className="terminal-header">
                 <div className="terminal-dot" style={{ backgroundColor: "#f87171" }} />
                 <div className="terminal-dot" style={{ backgroundColor: "#fbbf24" }} />
@@ -87,38 +300,41 @@ export default function Hero() {
               </div>
 
               <div className="terminal-body">
-                <div className="terminal-line">
-                  <span className="terminal-prompt">$</span>
-                  <span className="terminal-command">whoami</span>
-                </div>
-                <div className="terminal-output mb-3">shehry</div>
-
-                <div className="terminal-line">
-                  <span className="terminal-prompt">$</span>
-                  <span className="terminal-command">cat focus.txt</span>
-                </div>
-                <div className="terminal-output">→ cybersecurity</div>
-                <div className="terminal-output">→ computer architecture</div>
-                <div className="terminal-output">→ systems programming</div>
-                <div className="terminal-output mb-3">→ reverse engineering</div>
-
-                <div className="terminal-line">
-                  <span className="terminal-prompt">$</span>
-                  <span className="terminal-command">status</span>
-                </div>
-                <div className="terminal-output">
-                  <span className="text-green">●</span> learning...
-                </div>
-                <div className="terminal-output">
-                  <span className="text-yellow">●</span> building...
-                </div>
-                <div className="terminal-output mb-3">
-                  <span className="text-accent">●</span> researching...
+                <div className="terminal-output-list" aria-live="polite" aria-atomic="false">
+                  {terminalEntries.map((entry, index) => (
+                    <div key={`${entry.type}-${index}`} className={entry.type === "command" ? "terminal-line" : "terminal-output"}>
+                      {entry.type === "command" ? (
+                        <>
+                          <span className="terminal-prompt">$</span>
+                          <span className="terminal-command">{entry.value}</span>
+                        </>
+                      ) : (
+                        entry.value
+                      )}
+                    </div>
+                  ))}
                 </div>
 
-                <div className="terminal-line">
+                <label htmlFor="portfolio-terminal-input" className="sr-only">
+                  Terminal command input
+                </label>
+                <div className="terminal-input-row">
                   <span className="terminal-prompt">$</span>
-                  <span className="cursor-blink text-accent">▊</span>
+                  <input
+                    id="portfolio-terminal-input"
+                    ref={inputRef}
+                    type="text"
+                    value={inputValue}
+                    onChange={(event) => setInputValue(event.target.value)}
+                    onKeyDown={handleKeyDown}
+                    className="terminal-input"
+                    aria-label="Terminal command input"
+                    spellCheck={false}
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="none"
+                    placeholder="type a command"
+                  />
                 </div>
               </div>
             </div>

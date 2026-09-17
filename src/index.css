@@ -262,29 +262,94 @@ body {
   font-family: var(--font-mono);
   font-size: 0.82rem;
   line-height: 1.8;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.terminal-output-list {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
 .terminal-line {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  min-width: 0;
 }
 
 .terminal-prompt {
   color: var(--color-green);
+  flex-shrink: 0;
 }
 
 .terminal-command {
   color: var(--color-text-secondary);
+  word-break: break-word;
 }
 
 .terminal-output {
   color: var(--color-text-secondary);
   margin-left: 1.15rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.terminal-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+  min-width: 0;
+}
+
+.terminal-input {
+  width: 100%;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  padding: 0;
+  outline: none;
+  caret-color: var(--color-accent);
+}
+
+.terminal-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.terminal-input:focus-visible {
+  outline: 2px solid rgba(96, 165, 250, 0.4);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .cursor-blink {
   animation: blink 1s step-end infinite;
+}
+
+@media (max-width: 480px) {
+  .terminal {
+    min-width: 0;
+  }
+
+  .terminal-body {
+    padding: 1rem 0.8rem 0.9rem;
+    font-size: 0.76rem;
+  }
+
+  .terminal-output {
+    margin-left: 0.95rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cursor-blink {
+    animation: none;
+  }
 }
 
 .architecture-layout {

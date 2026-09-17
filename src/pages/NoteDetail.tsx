@@ -1,12 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, ArrowRight, BookText, Calendar, Tag } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookText, Calendar, Download, RotateCcw, RotateCw, Tag, X } from "lucide-react";
 import { notes } from "../data/content";
 
 export default function NoteDetail() {
   const { slug } = useParams<{ slug: string }>();
   const note = notes.find((item) => item.slug === slug);
   const [currentPage, setCurrentPage] = useState(0);
+  const [pageRotations, setPageRotations] = useState<Record<number, number>>({});
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const imageButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     setCurrentPage(0);
@@ -47,6 +51,59 @@ export default function NoteDetail() {
   const pageCount = note.pages.length;
   const currentPageData = note.pages[currentPage];
   const hasPages = pageCount > 0;
+  const currentRotation = pageRotations[currentPage] ?? 0;
+
+  const rotatePage = (direction: "left" | "right") => {
+    const delta = direction === "left" ? -90 : 90;
+    setPageRotations((previous) => ({
+      ...previous,
+      [currentPage]: ((previous[currentPage] ?? 0) + delta + 360) % 360,
+    }));
+  };
+
+  const resetPageRotation = () => {
+    setPageRotations((previous) => ({
+      ...previous,
+      [currentPage]: 0,
+    }));
+  };
+
+  const handleDownload = () => {
+    if (!currentPageData?.image) return;
+
+    const link = document.createElement("a");
+    const fileName = currentPageData.image.split("/").pop() || `${note.slug}-page-${currentPage + 1}.jpg`;
+    link.href = currentPageData.image;
+    link.download = fileName;
+    link.rel = "noopener";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  useEffect(() => {
+    if (!isLightboxOpen) {
+      imageButtonRef.current?.focus();
+      return;
+    }
+
+    closeButtonRef.current?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsLightboxOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [isLightboxOpen]);
 
   return (
     <div className="min-h-screen pt-20">
@@ -93,12 +150,83 @@ export default function NoteDetail() {
                 <span>{note.title}</span>
               </div>
 
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => rotatePage("left")}
+                    aria-label="Rotate page left"
+                    title="Rotate page left"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-bg-secondary text-text-primary transition-colors hover:border-accent/30 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-card"
+                  >
+                    <RotateCcw size={16} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => rotatePage("right")}
+                    aria-label="Rotate page right"
+                    title="Rotate page right"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-md border border-border bg-bg-secondary text-text-primary transition-colors hover:border-accent/30 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-card"
+                  >
+                    <RotateCw size={16} />
+                  </button>
+
+                  {currentRotation !== 0 && (
+                    <button
+                      type="button"
+                      onClick={resetPageRotation}
+                      aria-label="Reset page rotation"
+                      title="Reset page rotation"
+                      className="inline-flex items-center gap-2 rounded-md border border-border bg-bg-secondary px-2.5 py-2 text-xs font-medium text-text-primary transition-colors hover:border-accent/30 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-card"
+                    >
+                      <RotateCcw size={14} />
+                      Reset
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={handleDownload}
+                    aria-label="Download page image"
+                    title="Download page image"
+                    className="inline-flex items-center gap-2 rounded-md border border-border bg-bg-secondary px-2.5 py-2 text-xs font-medium text-text-primary transition-colors hover:border-accent/30 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-card"
+                  >
+                    <Download size={14} />
+                    Download
+                  </button>
+                </div>
+
+                <div className="text-xs font-mono text-text-muted">
+                  Rotation: {currentRotation}°
+                </div>
+              </div>
+
               <div className="overflow-hidden rounded-xl border border-border bg-bg-secondary p-3 sm:p-4">
-                <img
-                  src={currentPageData.image}
-                  alt={currentPageData.alt}
-                  className="mx-auto max-h-[70vh] w-full max-w-full rounded-md border border-border object-contain bg-bg-card shadow-sm"
-                />
+                <div className="flex max-w-full items-center justify-center overflow-hidden rounded-md">
+                  <button
+                    type="button"
+                    ref={imageButtonRef}
+                    onClick={() => setIsLightboxOpen(true)}
+                    aria-label={`Open ${currentPageData.alt} in full size`}
+                    title="Click to enlarge"
+                    className="group block w-full cursor-zoom-in rounded-md text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-card"
+                  >
+                    <img
+                      src={currentPageData.image}
+                      alt={currentPageData.alt}
+                      style={{
+                        transform: `rotate(${currentRotation}deg)`,
+                        transition: "transform 180ms ease-in-out",
+                        transformOrigin: "center center",
+                      }}
+                      className="mx-auto max-h-[70vh] max-w-full rounded-md border border-border object-contain bg-bg-card shadow-sm"
+                    />
+                    <span className="mt-2 inline-flex items-center text-[11px] font-medium text-text-muted transition-colors group-hover:text-accent">
+                      Click to enlarge
+                    </span>
+                  </button>
+                </div>
               </div>
 
               <div className="mt-5 flex items-center justify-between gap-3">
@@ -107,7 +235,7 @@ export default function NoteDetail() {
                   onClick={() => setCurrentPage((previous) => Math.max(previous - 1, 0))}
                   disabled={currentPage === 0}
                   aria-label="Previous page"
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-bg-secondary px-3 py-2 text-sm font-medium text-text-primary transition-colors hover:border-accent/30 hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-bg-secondary px-3 py-2 text-sm font-medium text-text-primary transition-colors hover:border-accent/30 hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-card"
                 >
                   <ArrowLeft size={16} />
                   Previous
@@ -118,7 +246,7 @@ export default function NoteDetail() {
                   onClick={() => setCurrentPage((previous) => Math.min(previous + 1, pageCount - 1))}
                   disabled={currentPage >= pageCount - 1}
                   aria-label="Next page"
-                  className="inline-flex items-center gap-2 rounded-md border border-border bg-bg-secondary px-3 py-2 text-sm font-medium text-text-primary transition-colors hover:border-accent/30 hover:text-accent disabled:cursor-not-allowed disabled:opacity-40"
+                  className="inline-flex items-center gap-2 rounded-md border border-border bg-bg-secondary px-3 py-2 text-sm font-medium text-text-primary transition-colors hover:border-accent/30 hover:text-accent disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-card"
                 >
                   Next
                   <ArrowRight size={16} />
@@ -136,6 +264,58 @@ export default function NoteDetail() {
           )}
         </div>
       </div>
+
+      {isLightboxOpen && currentPageData?.image ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3 sm:p-6"
+          onClick={() => setIsLightboxOpen(false)}
+          role="dialog"
+          aria-modal="true"
+          aria-label={currentPageData.alt}
+        >
+          <div
+            className="relative max-h-[90vh] max-w-[90vw] overflow-hidden rounded-md border border-border bg-bg-card p-2 sm:p-4"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-3 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleDownload}
+                aria-label="Download image"
+                title="Download image"
+                className="inline-flex items-center gap-2 rounded-md border border-border bg-bg-secondary px-2.5 py-2 text-xs font-medium text-text-primary transition-colors hover:border-accent/30 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-card"
+              >
+                <Download size={14} />
+                Download
+              </button>
+
+              <button
+                type="button"
+                ref={closeButtonRef}
+                onClick={() => setIsLightboxOpen(false)}
+                aria-label="Close image viewer"
+                title="Close image viewer"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-border bg-bg-secondary text-text-primary transition-colors hover:border-accent/30 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/60 focus-visible:ring-offset-2 focus-visible:ring-offset-bg-card"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="flex max-h-[80vh] max-w-[85vw] items-center justify-center overflow-hidden rounded-md bg-bg-secondary p-2 sm:p-3">
+              <img
+                src={currentPageData.image}
+                alt={currentPageData.alt}
+                style={{
+                  transform: `rotate(${currentRotation}deg)`,
+                  transition: "transform 180ms ease-in-out",
+                  transformOrigin: "center center",
+                }}
+                className="max-h-[80vh] max-w-[85vw] rounded-md border border-border object-contain bg-bg-card shadow-sm"
+              />
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
