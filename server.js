@@ -1,6 +1,6 @@
 import http from "node:http";
 import { createWriteStream } from "node:fs";
-import { mkdir, readFile, writeFile, rename, unlink, access } from "node:fs/promises";
+import { mkdir, readFile, writeFile, rename, unlink, access, rm } from "node:fs/promises";
 import { constants } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -197,12 +197,68 @@ const updateNotePages = async (slug, pages) => {
   const entry = bounds ? file.slice(bounds.start, bounds.end) : null;
   if (!entry) throw new Error("Note not found.");
 
-  const updatedEntry = entry.replace(/^    pages: [\s\S]*\n  },$/m, `    pages: ${JSON.stringify(pages)},\n  },`);
-  if (updatedEntry === entry) throw new Error("Unable to locate note pages metadata.");
+  const pagesStart = entry.indexOf("    pages:");
+  if (pagesStart === -1) throw new Error("Unable to locate note pages metadata.");
+  const entryEnd = entry.lastIndexOf("\n  },");
+  if (entryEnd === -1 || entryEnd < pagesStart) throw new Error("Unable to locate note entry boundary.");
+  const updatedEntry = `${entry.slice(0, pagesStart)}    pages: ${JSON.stringify(pages)},${entry.slice(entryEnd)}`;
   const updatedFile = `${file.slice(0, bounds.start)}${updatedEntry}${file.slice(bounds.end)}`;
   const tempPath = `${CONTENT_FILE}.tmp`;
   await writeFile(tempPath, updatedFile, "utf-8");
   await rename(tempPath, CONTENT_FILE);
+};
+
+const writeContentFile = async (file) => {
+  const tempPath = `${CONTENT_FILE}.tmp`;
+  await writeFile(tempPath, file, "utf-8");
+  await rename(tempPath, CONTENT_FILE);
+};
+
+const replaceNoteMetadata = async (originalSlug, payload) => {
+  const file = await readFile(CONTENT_FILE, "utf-8");
+  const bounds = getNoteEntryBounds(file, originalSlug);
+  if (!bounds) throw new Error("Note not found.");
+
+  const updatedFile = `${file.slice(0, bounds.start)}${buildNoteMetadataEntry(payload).trimEnd()}${file.slice(bounds.end)}`;
+  await writeContentFile(updatedFile);
+};
+
+const removeNoteMetadata = async (slug) => {
+  const file = await readFile(CONTENT_FILE, "utf-8");
+  const bounds = getNoteEntryBounds(file, slug);
+  if (!bounds) throw new Error("Note not found.");
+
+  const updatedFile = `${file.slice(0, bounds.start)}${file.slice(bounds.end)}`;
+  await writeContentFile(updatedFile);
+  return { file, entry: file.slice(bounds.start, bounds.end) };
+};
+
+const validateNoteMetadataPayload = (payload) => {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Request body must be a JSON object.");
+  }
+
+  for (const field of ["title", "description", "slug", "date", "category", "tags"]) {
+    if (payload[field] === undefined || payload[field] === null) {
+      throw new Error(`Missing required field: ${field}.`);
+    }
+  }
+
+  if (typeof payload.title !== "string" || payload.title.trim().length < 2) throw new Error("Title must be at least 2 characters long.");
+  if (typeof payload.description !== "string" || !payload.description.trim()) throw new Error("Description is required.");
+  if (typeof payload.slug !== "string" || !isSafeSlug(payload.slug)) throw new Error("Slug is invalid. Use lowercase letters, numbers, and hyphens only.");
+  if (typeof payload.date !== "string" || Number.isNaN(Date.parse(payload.date))) throw new Error("Date must be a valid ISO date string.");
+  if (typeof payload.category !== "string" || !payload.category.trim()) throw new Error("Category is required.");
+  if (!Array.isArray(payload.tags) || !payload.tags.every((tag) => typeof tag === "string")) throw new Error("Tags must be an array of strings.");
+
+  return {
+    slug: payload.slug.trim(),
+    title: payload.title.trim(),
+    description: payload.description.trim(),
+    date: payload.date.trim(),
+    tags: payload.tags.map((tag) => tag.trim()).filter(Boolean),
+    category: payload.category.trim(),
+  };
 };
 
 const validateNotePages = (slug, pages) => {
@@ -634,6 +690,88 @@ const server = http.createServer(async (req, res) => {
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to create note.";
       const statusCode = message === "A note with this slug already exists." ? 409 : 400;
+      sendJson(res, statusCode, { ok: false, error: message });
+    }
+    return;
+  }
+
+  if (req.method === "PUT" && url.pathname.startsWith("/api/content/notes/") && !url.pathname.endsWith("/pages")) {
+    const originalSlug = decodeURIComponent(url.pathname.slice("/api/content/notes/".length));
+    try {
+      getNotePaths(originalSlug);
+      const requestBody = await parseJsonBody(req);
+      const payload = validateNoteMetadataPayload(requestBody);
+      getNotePaths(payload.slug);
+
+      await withNoteWriteLock(async () => {
+        const contentFile = await readFile(CONTENT_FILE, "utf-8");
+        const note = readNoteMetadata(contentFile, originalSlug);
+        const slugChanged = originalSlug !== payload.slug;
+        const originalPaths = getNotePaths(originalSlug);
+        const nextPaths = getNotePaths(payload.slug);
+        let assetsMoved = false;
+
+        if (slugChanged && noteSlugExists(contentFile, payload.slug)) {
+          throw new Error("A note with this slug already exists.");
+        }
+
+        if (slugChanged && !(await ensureFileDoesNotExist(nextPaths.noteDirectory))) {
+          throw new Error("The target note image directory already exists.");
+        }
+
+        const nextPages = slugChanged
+          ? note.pages.map((page) => (page.image
+            ? { ...page, image: page.image.startsWith(`/notes/${originalSlug}/`) ? `/notes/${payload.slug}/${page.image.slice(`/notes/${originalSlug}/`.length)}` : page.image }
+            : page))
+          : note.pages;
+
+        try {
+          if (slugChanged && !(await ensureFileDoesNotExist(originalPaths.noteDirectory))) {
+            await rename(originalPaths.noteDirectory, nextPaths.noteDirectory);
+            assetsMoved = true;
+          }
+
+          await replaceNoteMetadata(originalSlug, { ...payload, pages: nextPages });
+        } catch (error) {
+          if (assetsMoved) await rename(nextPaths.noteDirectory, originalPaths.noteDirectory).catch(() => {});
+          throw error;
+        }
+      });
+
+      sendJson(res, 200, { ok: true, slug: payload.slug });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to update note.";
+      const statusCode = message === "Note not found." ? 404 : message.includes("already exists") || message.includes("directory already exists") ? 409 : message.includes("metadata was removed") ? 500 : 400;
+      sendJson(res, statusCode, { ok: false, error: message });
+    }
+    return;
+  }
+
+  if (req.method === "DELETE" && url.pathname.startsWith("/api/content/notes/") && !url.pathname.endsWith("/pages")) {
+    const slug = decodeURIComponent(url.pathname.slice("/api/content/notes/".length));
+    try {
+      getNotePaths(slug);
+      await withNoteWriteLock(async () => {
+        const contentFile = await readFile(CONTENT_FILE, "utf-8");
+        readNoteMetadata(contentFile, slug);
+        const { noteDirectory } = getNotePaths(slug);
+        const removed = await removeNoteMetadata(slug);
+
+        try {
+          await rm(noteDirectory, { recursive: true, force: true });
+        } catch (error) {
+          try {
+            await writeContentFile(removed.file);
+          } catch {
+            throw new Error("Note metadata was removed but image cleanup failed; manual recovery is required.");
+          }
+          throw new Error("Unable to remove note images; note metadata was restored.");
+        }
+      });
+      sendJson(res, 200, { ok: true, slug });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to delete note.";
+      const statusCode = message === "Note not found." ? 404 : message.includes("manual recovery") ? 500 : message.includes("restored") ? 500 : 400;
       sendJson(res, statusCode, { ok: false, error: message });
     }
     return;

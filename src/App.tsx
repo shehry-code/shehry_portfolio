@@ -20,6 +20,7 @@ import AdminEditBlog from "./pages/AdminEditBlog";
 import AdminNotes from "./pages/AdminNotes";
 import AdminNotePages from "./pages/AdminNotePages";
 import AdminNewNote from "./pages/AdminNewNote";
+import AdminEditNote from "./pages/AdminEditNote";
 import AdminResearchPlaceholder from "./pages/AdminResearchPlaceholder";
 import AdminProjectsPlaceholder from "./pages/AdminProjectsPlaceholder";
 import NotFound from "./pages/NotFound";
@@ -69,6 +70,7 @@ function AppContent({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () 
           <Route path="/admin/blogs/:slug/edit" element={<AdminEditBlog />} />
           <Route path="/admin/notes" element={<AdminNotes />} />
           <Route path="/admin/notes/new" element={<AdminNewNote />} />
+          <Route path="/admin/notes/:slug/edit" element={<AdminEditNote />} />
           <Route path="/admin/notes/:slug/pages" element={<AdminNotePages />} />
           <Route path="/admin/research" element={<AdminResearchPlaceholder />} />
           <Route path="/admin/projects" element={<AdminProjectsPlaceholder />} />

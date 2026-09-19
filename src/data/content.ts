@@ -350,20 +350,7 @@ export const notes: Note[] = [
     category: "Computer Architecture",
     pages: [],
   },
-  {
-    slug: "dram-row-buffer",
-    title: "DRAM Row Buffer",
-    description: "Understanding the row buffer mechanism in DRAM and its impact on memory access patterns.",
-    date: "2026-06-20",
-    tags: ["DRAM", "Memory", "Computer Architecture"],
-    category: "Computer Architecture",
-    pages: [
-      {
-        image: "/notes/dram-row-buffer/dram-row-buffer.jpg",
-        alt: "Handwritten DRAM row buffer note illustration",
-      },
-    ],
-  },
+
   {
     slug: "tcp-vs-udp",
     title: "TCP vs UDP",
@@ -373,16 +360,6 @@ export const notes: Note[] = [
     category: "Networking",
     pages: [],
   },
-  {
-    slug: "linux-process-states",
-    title: "Linux Process States",
-    description: "Understanding the different states a process can be in on a Linux system.",
-    date: "2026-07-20",
-    tags: ["Linux", "Operating Systems", "Processes"],
-    category: "Operating Systems",
-    pages: [{"image":"/notes/linux-process-states/page-f60a2237-d7d3-4bcf-890a-94ffbab9b93c.jpg","alt":"dram-row-buffer.jpg"}],
-  },
-
 
 ];
 

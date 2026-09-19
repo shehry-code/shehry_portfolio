@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowDown, ArrowLeft, ArrowUp, Save, Trash2, Upload } from "lucide-react";
+import { ArrowDown, ArrowLeft, ArrowUp, Pencil, Save, Trash2, Upload } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
 import type { NotePage } from "../data/content";
 
@@ -168,7 +168,7 @@ export default function AdminNotePages() {
 
             <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
               <Link to="/admin/notes" className="inline-flex items-center gap-2 text-sm text-text-muted hover:text-accent"><ArrowLeft size={14} />Back to notes</Link>
-              <button type="button" onClick={() => savePages(pages)} disabled={isBusy} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-text-primary hover:border-accent/30 hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"><Save size={14} />Save pages</button>
+              <div className="flex flex-wrap items-center gap-2"><Link to={`/admin/notes/${encodeURIComponent(slug)}/edit`} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-text-primary hover:border-accent/30 hover:text-accent"><Pencil size={14} />Edit note</Link><button type="button" onClick={() => savePages(pages)} disabled={isBusy} className="inline-flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm font-medium text-text-primary hover:border-accent/30 hover:text-accent disabled:cursor-not-allowed disabled:opacity-60"><Save size={14} />Save pages</button></div>
             </div>
           </>
         )}
