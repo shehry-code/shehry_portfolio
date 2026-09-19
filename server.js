@@ -1,15 +1,27 @@
 import http from "node:http";
-import { readFile, writeFile, rename, unlink, access } from "node:fs/promises";
+import { createWriteStream } from "node:fs";
+import { mkdir, readFile, writeFile, rename, unlink, access } from "node:fs/promises";
 import { constants } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { randomUUID } from "node:crypto";
+import Busboy from "busboy";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = Number(process.env.PORT || 3001);
 const BLOGS_DIR = path.join(__dirname, "src", "content", "blogs");
+const NOTES_ASSETS_DIR = path.join(__dirname, "public", "notes");
 const CONTENT_FILE = path.join(__dirname, "src", "data", "content.ts");
+const MAX_NOTE_IMAGE_SIZE = 10 * 1024 * 1024;
+let noteWriteQueue = Promise.resolve();
+
+const withNoteWriteLock = (task) => {
+  const next = noteWriteQueue.then(task, task);
+  noteWriteQueue = next.catch(() => {});
+  return next;
+};
 
 const sendJson = (res, statusCode, payload) => {
   res.writeHead(statusCode, {
@@ -65,6 +77,65 @@ const getNotesArrayBounds = (file) => {
   return { start, closingIndex };
 };
 
+const getNoteEntryBounds = (file, slug) => {
+  const startMarker = `  {\n    slug: ${JSON.stringify(slug)},`;
+  const start = file.indexOf(startMarker);
+  if (start === -1) return null;
+
+  const nextEntry = file.indexOf("\n  {\n    slug:", start + startMarker.length);
+  const arrayEnd = file.indexOf("\n];", start + startMarker.length);
+  const end = nextEntry === -1 ? arrayEnd : Math.min(nextEntry, arrayEnd);
+  if (end === -1) return null;
+
+  return { start, end };
+};
+
+const readNoteEntry = (file, slug) => {
+  const bounds = getNoteEntryBounds(file, slug);
+  return bounds ? file.slice(bounds.start, bounds.end) : null;
+};
+
+const getNotePaths = (slug) => {
+  if (typeof slug !== "string" || !isSafeSlug(slug)) {
+    throw new Error("Slug is invalid. Use lowercase letters, numbers, and hyphens only.");
+  }
+
+  const noteDirectory = path.resolve(NOTES_ASSETS_DIR, slug.trim());
+  const relativePath = path.relative(path.resolve(NOTES_ASSETS_DIR), noteDirectory);
+  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    throw new Error("Note path resolves outside the notes directory.");
+  }
+
+  return { noteDirectory };
+};
+
+const getNoteImagePath = (slug, image) => {
+  const { noteDirectory } = getNotePaths(slug);
+  if (typeof image !== "string" || !image.startsWith(`/notes/${slug}/`)) {
+    throw new Error("Image path must belong to this note.");
+  }
+
+  let decodedImage;
+  try {
+    decodedImage = decodeURIComponent(image);
+  } catch {
+    throw new Error("Image path is invalid.");
+  }
+
+  const filename = decodedImage.slice(`/notes/${slug}/`.length);
+  if (!filename || filename.includes("/") || filename.includes("\\") || filename === "." || filename === "..") {
+    throw new Error("Image path must contain one safe filename.");
+  }
+
+  const imagePath = path.resolve(noteDirectory, filename);
+  const relativePath = path.relative(noteDirectory, imagePath);
+  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
+    throw new Error("Image path resolves outside the note directory.");
+  }
+
+  return { imagePath, filename };
+};
+
 const buildNoteMetadataEntry = (payload) => `
   {
     slug: ${JSON.stringify(payload.slug)},
@@ -90,6 +161,146 @@ const appendNoteMetadata = async (payload) => {
   await writeFile(tempPath, updated, "utf-8");
   await rename(tempPath, CONTENT_FILE);
 };
+
+const readNoteMetadata = (file, slug) => {
+  const entry = readNoteEntry(file, slug);
+  if (!entry) throw new Error("Note not found.");
+
+  const readField = (field) => entry.match(new RegExp(`^    ${field}: (.*),$`, "m"))?.[1] || "";
+  const pagesValue = entry.match(/    pages: ([\s\S]*?),\n  \},$/)?.[1] || "[]";
+  const pages = [...pagesValue.matchAll(/\{([\s\S]*?)\}/g)].map((match) => {
+    const pageEntry = match[1];
+    const readPageString = (field) => pageEntry.match(new RegExp(`(?:^|[,\\s])(?:${field}|"${field}"):\\s*("(?:\\\\.|[^"\\\\])*")`))?.[1];
+    const altValue = readPageString("alt");
+    if (!altValue) throw new Error("Note page metadata is invalid.");
+    const imageValue = readPageString("image");
+    return {
+      ...(imageValue ? { image: JSON.parse(imageValue) } : {}),
+      alt: JSON.parse(altValue),
+    };
+  });
+
+  return {
+    slug,
+    title: JSON.parse(readField("title")),
+    description: JSON.parse(readField("description")),
+    date: JSON.parse(readField("date")),
+    tags: JSON.parse(readField("tags")),
+    category: JSON.parse(readField("category")),
+    pages,
+  };
+};
+
+const updateNotePages = async (slug, pages) => {
+  const file = await readFile(CONTENT_FILE, "utf-8");
+  const bounds = getNoteEntryBounds(file, slug);
+  const entry = bounds ? file.slice(bounds.start, bounds.end) : null;
+  if (!entry) throw new Error("Note not found.");
+
+  const updatedEntry = entry.replace(/^    pages: [\s\S]*\n  },$/m, `    pages: ${JSON.stringify(pages)},\n  },`);
+  if (updatedEntry === entry) throw new Error("Unable to locate note pages metadata.");
+  const updatedFile = `${file.slice(0, bounds.start)}${updatedEntry}${file.slice(bounds.end)}`;
+  const tempPath = `${CONTENT_FILE}.tmp`;
+  await writeFile(tempPath, updatedFile, "utf-8");
+  await rename(tempPath, CONTENT_FILE);
+};
+
+const validateNotePages = (slug, pages) => {
+  if (!Array.isArray(pages)) throw new Error("Pages must be an array.");
+  return pages.map((page) => {
+    if (!page || typeof page !== "object" || Array.isArray(page) || typeof page.alt !== "string" || !page.alt.trim()) {
+      throw new Error("Each page must contain a non-empty alt string.");
+    }
+    if (page.image === undefined) return { alt: page.alt.trim() };
+    const { filename } = getNoteImagePath(slug, page.image);
+    if (!/^[a-zA-Z0-9_-]+\.(?:jpg|jpeg|png|webp)$/.test(filename)) {
+      throw new Error("Image filename is invalid.");
+    }
+    return { image: `/notes/${slug}/${filename}`, alt: page.alt.trim() };
+  });
+};
+
+const detectImageType = (signature) => {
+  if (signature.length >= 3 && signature[0] === 0xff && signature[1] === 0xd8 && signature[2] === 0xff) return { mime: "image/jpeg", extension: "jpg" };
+  if (signature.length >= 8 && signature.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) return { mime: "image/png", extension: "png" };
+  if (signature.length >= 12 && signature.toString("ascii", 0, 4) === "RIFF" && signature.toString("ascii", 8, 12) === "WEBP") return { mime: "image/webp", extension: "webp" };
+  return null;
+};
+
+const parseNoteImageUpload = (req) => new Promise((resolve, reject) => {
+  let parser;
+  try {
+    parser = Busboy({ headers: req.headers, limits: { fileSize: MAX_NOTE_IMAGE_SIZE, files: 1, fields: 2 } });
+  } catch {
+    reject(new Error("Request must be multipart/form-data."));
+    return;
+  }
+
+  let alt = "";
+  let upload;
+  let filePromise = Promise.resolve();
+  let settled = false;
+  const fail = (error) => {
+    if (!settled) {
+      settled = true;
+      if (upload && !error.tempPath) error.tempPath = upload.tempPath;
+      reject(error);
+    }
+  };
+
+  parser.on("field", (name, value) => {
+    if (name === "alt") alt = value;
+  });
+
+  parser.on("file", (name, file, info) => {
+    if (name !== "image" || upload) {
+      file.resume();
+      fail(new Error("Upload must contain exactly one image field."));
+      return;
+    }
+
+    const tempPath = path.join(NOTES_ASSETS_DIR, `.upload-${randomUUID()}.tmp`);
+    const signature = [];
+    let tooLarge = false;
+    upload = { mimeType: info.mimeType, tempPath, signature, get tooLarge() { return tooLarge; } };
+    file.on("data", (chunk) => {
+      if (signature.length < 12) signature.push(...chunk.subarray(0, 12 - signature.length));
+    });
+    file.on("limit", () => { tooLarge = true; });
+    file.on("error", () => fail(new Error("Failed to read uploaded image.")));
+
+    const writeStream = createWriteStream(tempPath, { flags: "wx" });
+    writeStream.on("error", () => fail(new Error("Failed to store uploaded image.")));
+    file.pipe(writeStream);
+    filePromise = new Promise((resolveFile, rejectFile) => {
+      writeStream.on("close", resolveFile);
+      writeStream.on("error", rejectFile);
+    });
+  });
+
+  parser.on("error", () => fail(new Error("Malformed multipart upload.")));
+  parser.on("filesLimit", () => fail(new Error("Upload must contain exactly one image file.")));
+  parser.on("fieldsLimit", () => fail(new Error("Upload contains too many fields.")));
+  parser.on("finish", async () => {
+    try {
+      await filePromise;
+      if (!upload) throw new Error("An image file is required.");
+      if (upload.tooLarge) throw new Error("Image exceeds the 10 MiB size limit.");
+      if (!alt.trim()) throw new Error("Alt text is required.");
+      const imageType = detectImageType(Buffer.from(upload.signature));
+      if (!imageType || upload.mimeType !== imageType.mime) throw new Error("Only valid JPEG, PNG, and WebP images are accepted.");
+      if (upload.mimeType === "image/svg+xml" || upload.mimeType === "image/gif") throw new Error("This image format is not supported.");
+      if (settled) return;
+      settled = true;
+      resolve({ ...upload, alt: alt.trim(), imageType });
+    } catch (error) {
+      fail(error);
+    }
+  });
+
+  req.on("error", () => fail(new Error("Failed to read upload request.")));
+  req.pipe(parser);
+});
 
 const ensureFileDoesNotExist = async (targetPath) => {
   try {
@@ -424,6 +635,103 @@ const server = http.createServer(async (req, res) => {
       const message = error instanceof Error ? error.message : "Unable to create note.";
       const statusCode = message === "A note with this slug already exists." ? 409 : 400;
       sendJson(res, statusCode, { ok: false, error: message });
+    }
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname.startsWith("/api/content/notes/")) {
+    try {
+      const slug = decodeURIComponent(url.pathname.slice("/api/content/notes/".length));
+      const contentFile = await readFile(CONTENT_FILE, "utf-8");
+      sendJson(res, 200, { ok: true, note: readNoteMetadata(contentFile, slug) });
+    } catch (error) {
+      const message = error?.message === "Note not found." ? "Note not found." : "Unable to load note.";
+      sendJson(res, message === "Note not found." ? 404 : 400, { ok: false, error: message });
+    }
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname.startsWith("/api/content/notes/") && url.pathname.endsWith("/pages")) {
+    const slug = decodeURIComponent(url.pathname.slice("/api/content/notes/".length, -"/pages".length));
+    let upload;
+    try {
+      getNotePaths(slug);
+      upload = await parseNoteImageUpload(req);
+      const { noteDirectory } = getNotePaths(slug);
+      await mkdir(noteDirectory, { recursive: true });
+      const filename = `page-${randomUUID()}.${upload.imageType.extension}`;
+      const { imagePath } = getNoteImagePath(slug, `/notes/${slug}/${filename}`);
+      const page = await withNoteWriteLock(async () => {
+        const contentFile = await readFile(CONTENT_FILE, "utf-8");
+        const note = readNoteMetadata(contentFile, slug);
+        await rename(upload.tempPath, imagePath);
+        const nextPage = { image: `/notes/${slug}/${filename}`, alt: upload.alt };
+        try {
+          await updateNotePages(slug, [...note.pages, nextPage]);
+        } catch (error) {
+          await unlink(imagePath).catch(() => {});
+          throw error;
+        }
+        return nextPage;
+      });
+
+      sendJson(res, 201, { ok: true, page });
+    } catch (error) {
+      if (upload?.tempPath) await unlink(upload.tempPath).catch(() => {});
+      if (error?.tempPath) await unlink(error.tempPath).catch(() => {});
+      const message = error?.message === "Note not found." ? "Note not found." : error instanceof Error ? error.message : "Unable to upload note page.";
+      const statusCode = message === "Note not found." ? 404 : message.includes("10 MiB") || message.includes("accepted") ? 415 : 400;
+      sendJson(res, statusCode, { ok: false, error: message });
+    }
+    return;
+  }
+
+  if (req.method === "PUT" && url.pathname.startsWith("/api/content/notes/") && url.pathname.endsWith("/pages")) {
+    const slug = decodeURIComponent(url.pathname.slice("/api/content/notes/".length, -"/pages".length));
+    try {
+      getNotePaths(slug);
+      const contentFile = await readFile(CONTENT_FILE, "utf-8");
+      readNoteMetadata(contentFile, slug);
+      const requestBody = await parseJsonBody(req);
+      const pages = validateNotePages(slug, requestBody.pages);
+      await Promise.all(pages.filter((page) => page.image).map(async (page) => {
+        const { imagePath } = getNoteImagePath(slug, page.image);
+        await access(imagePath);
+      }));
+      await withNoteWriteLock(() => updateNotePages(slug, pages));
+      sendJson(res, 200, { ok: true, pages });
+    } catch (error) {
+      const message = error?.code === "ENOENT" ? "Referenced page image does not exist." : error?.message === "Note not found." ? "Note not found." : error instanceof Error ? error.message : "Unable to update note pages.";
+      sendJson(res, message === "Note not found." ? 404 : message === "Referenced page image does not exist." ? 400 : 400, { ok: false, error: message });
+    }
+    return;
+  }
+
+  if (req.method === "DELETE" && url.pathname.startsWith("/api/content/notes/") && url.pathname.endsWith("/pages")) {
+    const slug = decodeURIComponent(url.pathname.slice("/api/content/notes/".length, -"/pages".length));
+    try {
+      getNotePaths(slug);
+      const contentFile = await readFile(CONTENT_FILE, "utf-8");
+      const note = readNoteMetadata(contentFile, slug);
+      const requestBody = await parseJsonBody(req);
+      const image = requestBody.image;
+      const remainingPages = note.pages.filter((page) => page.image !== image);
+      if (remainingPages.length === note.pages.length) {
+        sendJson(res, 404, { ok: false, error: "Page not found." });
+        return;
+      }
+      const { imagePath } = getNoteImagePath(slug, image);
+      await withNoteWriteLock(() => updateNotePages(slug, remainingPages));
+      try {
+        await unlink(imagePath);
+      } catch (error) {
+        sendJson(res, 200, { ok: true, warning: "Page metadata removed, but the image file could not be removed." });
+        return;
+      }
+      sendJson(res, 200, { ok: true });
+    } catch (error) {
+      const message = error?.message === "Note not found." ? "Note not found." : error instanceof Error ? error.message : "Unable to delete note page.";
+      sendJson(res, message === "Note not found." ? 404 : 400, { ok: false, error: message });
     }
     return;
   }

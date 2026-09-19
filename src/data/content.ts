@@ -380,8 +380,10 @@ export const notes: Note[] = [
     date: "2026-07-20",
     tags: ["Linux", "Operating Systems", "Processes"],
     category: "Operating Systems",
-    pages: [],
+    pages: [{"image":"/notes/linux-process-states/page-f60a2237-d7d3-4bcf-890a-94ffbab9b93c.jpg","alt":"dram-row-buffer.jpg"}],
   },
+
+
 ];
 
 // ============================================================

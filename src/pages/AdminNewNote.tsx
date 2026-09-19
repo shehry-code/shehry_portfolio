@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Plus, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import AdminLayout from "../components/AdminLayout";
 
 const initialForm = {
@@ -10,7 +10,7 @@ const initialForm = {
   date: new Date().toISOString().slice(0, 10),
   category: "",
   tags: "",
-  pages: '[{"image":"/notes/example/page-01.jpg","alt":"Example handwritten note page"}]',
+  pages: "[]",
 };
 
 const slugify = (value: string) => value
@@ -132,15 +132,11 @@ export default function AdminNewNote() {
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
               <label className="text-sm font-medium text-text-primary">Pages</label>
-              <button type="button" className="inline-flex items-center gap-2 rounded-md border border-border bg-bg-card px-2.5 py-1.5 text-xs font-medium text-text-primary transition-colors hover:border-accent/30 hover:text-accent" disabled>
-                <Plus size={12} />
-                Add page
-              </button>
+              <span className="text-xs text-text-muted">Add pages after creating the note.</span>
             </div>
 
             <div className="space-y-2">
-              <textarea id="note-pages" value={form.pages} onChange={(event) => setForm((current) => ({ ...current, pages: event.target.value }))} rows={5} className="w-full rounded-md border border-border bg-bg-secondary px-3 py-2.5 font-mono text-sm text-text-primary placeholder:text-text-muted focus:border-accent/30 focus:outline-none" aria-label="Note pages JSON" />
-              {errors.pages ? <p className="text-xs text-red">{errors.pages}</p> : null}
+              <p className="text-sm leading-6 text-text-muted">This note will be created with no pages. Use the page manager from the Notes list to upload, reorder, edit alt text, or remove handwritten pages.</p>
             </div>
           </div>
 

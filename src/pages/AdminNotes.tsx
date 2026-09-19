@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { BookText, Plus } from "lucide-react";
+import { BookText, Image, Plus } from "lucide-react";
 import { notes } from "../data/content";
 import AdminLayout from "../components/AdminLayout";
 
@@ -44,6 +44,10 @@ export default function AdminNotes() {
               <div className="mt-4 flex flex-wrap gap-3 text-xs text-text-muted">
                 <span>{new Date(note.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
                 <span>{note.tags.join(", ") || "No tags"}</span>
+                <Link to={`/admin/notes/${encodeURIComponent(note.slug)}/pages`} className="inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-1.5 font-medium text-text-primary transition-colors hover:border-accent/30 hover:text-accent">
+                  <Image size={12} />
+                  Manage pages
+                </Link>
               </div>
             </article>
           ))
