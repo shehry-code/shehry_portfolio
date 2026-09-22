@@ -1,9 +1,15 @@
 import { Link } from "react-router-dom";
 import { ArrowLeft, Terminal } from "lucide-react";
+import SEO from "../components/SEO";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen pt-20 flex items-center justify-center grid-bg">
+    <>
+      <SEO
+        title="Page Not Found | Shehry"
+        description="The page you requested could not be found."
+      />
+      <div className="min-h-screen pt-20 flex items-center justify-center grid-bg">
       <div className="mx-auto max-w-lg px-4 sm:px-6 text-center">
         {/* Terminal */}
         <div className="terminal mb-8 text-left">
@@ -51,6 +57,7 @@ export default function NotFound() {
           Return Home
         </Link>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

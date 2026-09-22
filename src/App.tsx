@@ -2,6 +2,7 @@ import { HashRouter, Routes, Route, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import SEO, { siteSchema } from "./components/SEO";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Projects from "./pages/Projects";
@@ -50,6 +51,11 @@ function AppContent({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () 
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary">
       <ScrollToTop />
+      <SEO
+        title="Shehry | Computer Science • Systems • Security"
+        description="Computer Science portfolio covering systems, cybersecurity, computer architecture, Linux internals, and hands-on technical learning."
+        schema={siteSchema}
+      />
       <Navbar theme={theme} onToggleTheme={onToggleTheme} />
       <main className="flex-1">
         <Routes>

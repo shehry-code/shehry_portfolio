@@ -15,7 +15,73 @@ const BLOGS_DIR = path.join(__dirname, "src", "content", "blogs");
 const NOTES_ASSETS_DIR = path.join(__dirname, "public", "notes");
 const CONTENT_FILE = path.join(__dirname, "src", "data", "content.ts");
 const MAX_NOTE_IMAGE_SIZE = 10 * 1024 * 1024;
+const MAX_JSON_BODY_SIZE = 1_000_000;
+const ALLOWED_LOCAL_ORIGINS = new Set([
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+]);
 let noteWriteQueue = Promise.resolve();
+
+const applyCorsHeaders = (req, res) => {
+  const origin = typeof req.headers.origin === "string" ? req.headers.origin : "";
+  if (!origin || !ALLOWED_LOCAL_ORIGINS.has(origin)) {
+    return;
+  }
+
+  res.setHeader("Access-Control-Allow-Origin", origin);
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Vary", "Origin");
+};
+
+const ensureWithinRoot = (rootDirectory, targetPath) => {
+  const root = path.resolve(rootDirectory);
+  const resolvedTarget = path.resolve(targetPath);
+  const relative = path.relative(root, resolvedTarget);
+  const isInsideRoot = relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+
+  if (!isInsideRoot) {
+    throw new Error("Requested path resolves outside the allowed directory.");
+  }
+
+  return resolvedTarget;
+};
+
+const assertSafeSlug = (slug, label = "Slug") => {
+  if (typeof slug !== "string") {
+    throw new Error(`${label} must be a string.`);
+  }
+
+  const trimmed = slug.trim();
+  if (!trimmed || trimmed !== slug || trimmed.includes("..") || trimmed.includes("/") || trimmed.includes("\\")) {
+    throw new Error(`${label} contains unsafe path characters.`);
+  }
+
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(trimmed)) {
+    throw new Error(`${label} is invalid. Use lowercase letters, numbers, and hyphens only.`);
+  }
+
+  return trimmed;
+};
+
+const assertSafeFilename = (filename) => {
+  if (typeof filename !== "string" || !filename.trim()) {
+    throw new Error("Filename is required.");
+  }
+
+  const normalized = path.basename(filename.replace(/\\/g, "/"));
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(normalized)) {
+    throw new Error("Filename contains unsafe characters.");
+  }
+
+  if (/[.](?:js|jsm|mjs|cjs|sh|bash|exe|bat|cmd|html|htm|svg|xml|php|py|pl|rb|ps1|scr)$/i.test(normalized)) {
+    throw new Error("This file type is not allowed.");
+  }
+
+  return normalized;
+};
 
 const withNoteWriteLock = (task) => {
   const next = noteWriteQueue.then(task, task);
@@ -26,9 +92,6 @@ const withNoteWriteLock = (task) => {
 const sendJson = (res, statusCode, payload) => {
   res.writeHead(statusCode, {
     "Content-Type": "application/json; charset=utf-8",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
   });
   res.end(JSON.stringify(payload));
 };
@@ -38,7 +101,7 @@ const parseJsonBody = (req) => new Promise((resolve, reject) => {
 
   req.on("data", (chunk) => {
     body += chunk.toString();
-    if (body.length > 1_000_000) {
+    if (body.length > MAX_JSON_BODY_SIZE) {
       reject(new Error("Request payload too large."));
       req.destroy();
     }
@@ -60,7 +123,7 @@ const parseJsonBody = (req) => new Promise((resolve, reject) => {
   req.on("error", () => reject(new Error("Failed to read request body.")));
 });
 
-const isSafeSlug = (value) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.trim());
+const isSafeSlug = (value) => typeof value === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value.trim()) && !value.includes("/") && !value.includes("\\") && !value.includes("..") && value === value.trim();
 
 const escapeRegExp = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -96,22 +159,16 @@ const readNoteEntry = (file, slug) => {
 };
 
 const getNotePaths = (slug) => {
-  if (typeof slug !== "string" || !isSafeSlug(slug)) {
-    throw new Error("Slug is invalid. Use lowercase letters, numbers, and hyphens only.");
-  }
-
-  const noteDirectory = path.resolve(NOTES_ASSETS_DIR, slug.trim());
-  const relativePath = path.relative(path.resolve(NOTES_ASSETS_DIR), noteDirectory);
-  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
-    throw new Error("Note path resolves outside the notes directory.");
-  }
-
+  const normalizedSlug = assertSafeSlug(slug, "Note slug");
+  const noteDirectory = ensureWithinRoot(NOTES_ASSETS_DIR, path.resolve(NOTES_ASSETS_DIR, normalizedSlug));
   return { noteDirectory };
 };
 
 const getNoteImagePath = (slug, image) => {
-  const { noteDirectory } = getNotePaths(slug);
-  if (typeof image !== "string" || !image.startsWith(`/notes/${slug}/`)) {
+  const normalizedSlug = assertSafeSlug(slug, "Note slug");
+  const { noteDirectory } = getNotePaths(normalizedSlug);
+
+  if (typeof image !== "string" || !image.startsWith(`/notes/${normalizedSlug}/`)) {
     throw new Error("Image path must belong to this note.");
   }
 
@@ -122,18 +179,11 @@ const getNoteImagePath = (slug, image) => {
     throw new Error("Image path is invalid.");
   }
 
-  const filename = decodedImage.slice(`/notes/${slug}/`.length);
-  if (!filename || filename.includes("/") || filename.includes("\\") || filename === "." || filename === "..") {
-    throw new Error("Image path must contain one safe filename.");
-  }
+  const filename = decodedImage.slice(`/notes/${normalizedSlug}/`.length);
+  const safeFilename = assertSafeFilename(filename);
+  const imagePath = ensureWithinRoot(noteDirectory, path.resolve(noteDirectory, safeFilename));
 
-  const imagePath = path.resolve(noteDirectory, filename);
-  const relativePath = path.relative(noteDirectory, imagePath);
-  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
-    throw new Error("Image path resolves outside the note directory.");
-  }
-
-  return { imagePath, filename };
+  return { imagePath, filename: safeFilename };
 };
 
 const buildNoteMetadataEntry = (payload) => `
@@ -238,6 +288,12 @@ const validateNoteMetadataPayload = (payload) => {
     throw new Error("Request body must be a JSON object.");
   }
 
+  const allowedFields = new Set(["title", "description", "slug", "date", "category", "tags", "pages"]);
+  const extraKeys = Object.keys(payload).filter((key) => !allowedFields.has(key));
+  if (extraKeys.length > 0) {
+    throw new Error("Request body contains unsupported fields.");
+  }
+
   for (const field of ["title", "description", "slug", "date", "category", "tags"]) {
     if (payload[field] === undefined || payload[field] === null) {
       throw new Error(`Missing required field: ${field}.`);
@@ -246,7 +302,8 @@ const validateNoteMetadataPayload = (payload) => {
 
   if (typeof payload.title !== "string" || payload.title.trim().length < 2) throw new Error("Title must be at least 2 characters long.");
   if (typeof payload.description !== "string" || !payload.description.trim()) throw new Error("Description is required.");
-  if (typeof payload.slug !== "string" || !isSafeSlug(payload.slug)) throw new Error("Slug is invalid. Use lowercase letters, numbers, and hyphens only.");
+  if (typeof payload.slug !== "string") throw new Error("Slug is invalid. Use lowercase letters, numbers, and hyphens only.");
+  assertSafeSlug(payload.slug, "Note slug");
   if (typeof payload.date !== "string" || Number.isNaN(Date.parse(payload.date))) throw new Error("Date must be a valid ISO date string.");
   if (typeof payload.category !== "string" || !payload.category.trim()) throw new Error("Category is required.");
   if (!Array.isArray(payload.tags) || !payload.tags.every((tag) => typeof tag === "string")) throw new Error("Tags must be an array of strings.");
@@ -274,6 +331,17 @@ const validateNotePages = (slug, pages) => {
     }
     return { image: `/notes/${slug}/${filename}`, alt: page.alt.trim() };
   });
+};
+
+const assertAllowedNotePagePayload = (payload) => {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error("Request body must be a JSON object.");
+  }
+
+  const allowedFields = new Set(["pages", "image", "alt"]);
+  if (Object.keys(payload).some((key) => !allowedFields.has(key))) {
+    throw new Error("Request body contains unsupported fields.");
+  }
 };
 
 const detectImageType = (signature) => {
@@ -468,23 +536,20 @@ const readBlogMetadata = (file, slug) => {
 };
 
 const getBlogPaths = (slug) => {
-  if (typeof slug !== "string" || !isSafeSlug(slug)) {
-    throw new Error("Slug is invalid. Use lowercase letters, numbers, and hyphens only.");
-  }
-
-  const markdownPath = path.resolve(BLOGS_DIR, `${slug.trim()}.md`);
-  const relativePath = path.relative(path.resolve(BLOGS_DIR), markdownPath);
-
-  if (relativePath.startsWith("..") || path.isAbsolute(relativePath)) {
-    throw new Error("Slug resolves outside the blog directory.");
-  }
-
+  const normalizedSlug = assertSafeSlug(slug, "Blog slug");
+  const markdownPath = ensureWithinRoot(BLOGS_DIR, path.resolve(BLOGS_DIR, `${normalizedSlug}.md`));
   return { markdownPath };
 };
 
 const validateBlogPayload = (payload) => {
-  if (!payload || typeof payload !== "object") {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     throw new Error("Request body must be a JSON object.");
+  }
+
+  const allowedFields = new Set(["title", "slug", "description", "date", "updated", "category", "readingTime", "featured", "draft", "tags", "content"]);
+  const extraKeys = Object.keys(payload).filter((key) => !allowedFields.has(key));
+  if (extraKeys.length > 0) {
+    throw new Error("Request body contains unsupported fields.");
   }
 
   const requiredFields = ["title", "slug", "description", "date", "category", "readingTime", "content"];
@@ -499,13 +564,11 @@ const validateBlogPayload = (payload) => {
     throw new Error("Title must be at least 2 characters long.");
   }
 
-  if (typeof payload.slug !== "string" || !isSafeSlug(payload.slug)) {
+  if (typeof payload.slug !== "string") {
     throw new Error("Slug is invalid. Use lowercase letters, numbers, and hyphens only.");
   }
 
-  if (payload.slug.includes("..") || payload.slug.includes("/") || payload.slug.includes("\\")) {
-    throw new Error("Slug contains unsafe path characters.");
-  }
+  assertSafeSlug(payload.slug, "Blog slug");
 
   if (typeof payload.description !== "string" || payload.description.trim().length < 10) {
     throw new Error("Description must be at least 10 characters long.");
@@ -549,6 +612,12 @@ const validateNotePayload = (payload) => {
     throw new Error("Request body must be a JSON object.");
   }
 
+  const allowedFields = new Set(["title", "description", "slug", "date", "category", "tags", "pages"]);
+  const extraKeys = Object.keys(payload).filter((key) => !allowedFields.has(key));
+  if (extraKeys.length > 0) {
+    throw new Error("Request body contains unsupported fields.");
+  }
+
   for (const field of ["title", "description", "slug", "date", "category", "tags", "pages"]) {
     if (payload[field] === undefined || payload[field] === null) {
       throw new Error(`Missing required field: ${field}.`);
@@ -561,9 +630,10 @@ const validateNotePayload = (payload) => {
   if (typeof payload.description !== "string" || payload.description.trim().length < 1) {
     throw new Error("Description is required.");
   }
-  if (typeof payload.slug !== "string" || !isSafeSlug(payload.slug)) {
+  if (typeof payload.slug !== "string") {
     throw new Error("Slug is invalid. Use lowercase letters, numbers, and hyphens only.");
   }
+  assertSafeSlug(payload.slug, "Note slug");
   if (typeof payload.date !== "string" || Number.isNaN(Date.parse(payload.date))) {
     throw new Error("Date must be a valid ISO date string.");
   }
@@ -600,9 +670,16 @@ const normalizeNotePayload = (payload) => ({
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+  applyCorsHeaders(req, res);
 
   if (req.method === "OPTIONS") {
-    sendJson(res, 204, {});
+    res.writeHead(204, {
+      "Access-Control-Allow-Origin": req.headers.origin && ALLOWED_LOCAL_ORIGINS.has(req.headers.origin) ? req.headers.origin : undefined,
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      Vary: "Origin",
+    });
+    res.end();
     return;
   }
 
@@ -831,6 +908,7 @@ const server = http.createServer(async (req, res) => {
       const contentFile = await readFile(CONTENT_FILE, "utf-8");
       readNoteMetadata(contentFile, slug);
       const requestBody = await parseJsonBody(req);
+      assertAllowedNotePagePayload(requestBody);
       const pages = validateNotePages(slug, requestBody.pages);
       await Promise.all(pages.filter((page) => page.image).map(async (page) => {
         const { imagePath } = getNoteImagePath(slug, page.image);
@@ -852,6 +930,7 @@ const server = http.createServer(async (req, res) => {
       const contentFile = await readFile(CONTENT_FILE, "utf-8");
       const note = readNoteMetadata(contentFile, slug);
       const requestBody = await parseJsonBody(req);
+      assertAllowedNotePagePayload(requestBody);
       const image = requestBody.image;
       const remainingPages = note.pages.filter((page) => page.image !== image);
       if (remainingPages.length === note.pages.length) {
@@ -953,6 +1032,6 @@ const server = http.createServer(async (req, res) => {
   sendJson(res, 404, { ok: false, error: "Not found" });
 });
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Local content API listening on http://localhost:${PORT}`);
+server.listen(PORT, "127.0.0.1", () => {
+  console.log(`Local content API listening on http://127.0.0.1:${PORT}`);
 });

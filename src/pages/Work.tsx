@@ -1,9 +1,15 @@
 import { Briefcase, Code2, GraduationCap } from "lucide-react";
 import { Link } from "react-router-dom";
+import SEO from "../components/SEO";
 
 export default function Work() {
   return (
-    <div className="min-h-screen pt-20">
+    <>
+      <SEO
+        title="Work | Shehry"
+        description="Project experience, active learning, and technical growth in systems, cybersecurity, and engineering."
+      />
+      <div className="min-h-screen pt-20">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-12 sm:py-16">
         {/* Header */}
         <div className="mb-10">
@@ -131,6 +137,7 @@ export default function Work() {
           </Link>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

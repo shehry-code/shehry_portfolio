@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Mail, Github, Linkedin, Send } from "lucide-react";
+import SEO from "../components/SEO";
 import { profile } from "../data/content";
 
 export default function Contact() {
@@ -15,7 +16,12 @@ export default function Contact() {
   };
 
   return (
-    <div className="min-h-screen pt-20">
+    <>
+      <SEO
+        title="Contact | Shehry"
+        description="Get in touch about cybersecurity, systems engineering, technical learning, and collaboration opportunities."
+      />
+      <div className="min-h-screen pt-20">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-12 sm:py-16">
         {/* Header */}
         <div className="mb-10">
@@ -173,6 +179,7 @@ export default function Contact() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

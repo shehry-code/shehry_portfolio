@@ -251,12 +251,14 @@ export const blogPosts: BlogPost[] = [
   },
 
 
+
+
   {
     slug: "what-happens-when-program-runs",
     title: "What Actually Happens When a Program Runs?",
     description: "Tracing the journey of a program from source code to execution — the full stack of abstraction.",
     date: "2026-10-01",
-    updated: "2026-09-17",
+    updated: "2026-09-22",
     tags: ["Systems", "Compilers", "Operating Systems", "CPU"],
     category: "Systems",
     featured: true,
@@ -351,15 +353,6 @@ export const notes: Note[] = [
     pages: [],
   },
 
-  {
-    slug: "tcp-vs-udp",
-    title: "TCP vs UDP",
-    description: "Key differences between TCP and UDP transport protocols and when to use each.",
-    date: "2026-07-05",
-    tags: ["Networking", "TCP", "UDP", "Protocols"],
-    category: "Networking",
-    pages: [],
-  },
 
 ];
 

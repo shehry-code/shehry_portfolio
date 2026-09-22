@@ -36,7 +36,15 @@ npm install
 npm run dev
 ```
 
-The development server runs at [http://localhost:3000](http://localhost:3000).
+The public portfolio runs at [http://localhost:3000](http://localhost:3000).
+
+The local admin API is a separate developer-only tool for editing the repo content locally. It must remain bound to the loopback interface and is not a public CMS or production service.
+
+```bash
+npm run dev:admin
+```
+
+This starts the local admin server on the loopback interface and the Vite frontend together. The admin API listens on `http://127.0.0.1:3001` and is not intended to be exposed to the network.
 
 Run the checks and production build with:
 
@@ -175,6 +183,8 @@ This is a static Vite application deployed on Vercel.
 4. Deploy the generated application through Vercel.
 
 `HashRouter` is intentional for this static deployment, so the application does not require server-side routing or a backend rewrite configuration.
+
+The local admin server is separate from the public deployment. It is a repository-local editing helper for writing blog and note content during development. It is intentionally bound to `127.0.0.1`, uses only local allowed origins, and is not meant to be exposed beyond the same machine.
 
 - GitHub: [shehry-code/shehry_portfolio](https://github.com/shehry-code/shehry_portfolio)
 - Portfolio: [shehry-portfolio.vercel.app](https://shehry-portfolio.vercel.app)

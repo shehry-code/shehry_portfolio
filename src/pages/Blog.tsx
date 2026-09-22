@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { Search, Clock } from "lucide-react";
+import SEO from "../components/SEO";
 import { blogPosts } from "../data/content";
 
 export default function Blog() {
@@ -35,7 +36,12 @@ export default function Blog() {
   }, [searchQuery, activeCategory, activeTag, showFeaturedSection, featuredSlugs]);
 
   return (
-    <div className="min-h-screen pt-20">
+    <>
+      <SEO
+        title="Blog | Shehry"
+        description="Technical writing on computer architecture, systems programming, Linux, and cybersecurity from Shehry's learning journey."
+      />
+      <div className="min-h-screen pt-20">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-12 sm:py-16">
         {/* Header */}
         <div className="mb-10">
@@ -171,6 +177,7 @@ export default function Blog() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

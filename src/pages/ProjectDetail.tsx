@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Github, ExternalLink } from "lucide-react";
+import SEO from "../components/SEO";
 import { projects } from "../data/content";
 
 export default function ProjectDetail() {
@@ -8,18 +9,29 @@ export default function ProjectDetail() {
 
   if (!project) {
     return (
-      <div className="min-h-screen pt-20 flex items-center justify-center">
+      <>
+        <SEO
+          title="Project Not Found | Shehry"
+          description="The requested project could not be found."
+        />
+        <div className="min-h-screen pt-20 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-text-primary mb-2">Project Not Found</h1>
           <p className="text-text-muted mb-4">The project you're looking for doesn't exist.</p>
           <Link to="/projects" className="text-accent hover:underline">← Back to Projects</Link>
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen pt-20">
+    <>
+      <SEO
+        title={`${project.title} | Shehry`}
+        description={project.description}
+      />
+      <div className="min-h-screen pt-20">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-12 sm:py-16">
         {/* Back */}
         <Link
@@ -169,6 +181,7 @@ export default function ProjectDetail() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

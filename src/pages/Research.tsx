@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { FlaskConical, Github } from "lucide-react";
+import SEO from "../components/SEO";
 import { researchItems } from "../data/content";
 
 export default function Research() {
@@ -22,7 +23,12 @@ export default function Research() {
   };
 
   return (
-    <div className="min-h-screen pt-20">
+    <>
+      <SEO
+        title="Research | Shehry"
+        description="Technical research and experiments focused on computer architecture, systems security, and applied engineering exploration."
+      />
+      <div className="min-h-screen pt-20">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-12 sm:py-16">
         {/* Header */}
         <div className="mb-10">
@@ -178,6 +184,7 @@ export default function Research() {
           </p>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

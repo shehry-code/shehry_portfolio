@@ -300,7 +300,13 @@ export default function Hero() {
               </div>
 
               <div className="terminal-body">
-                <div className="terminal-output-list" aria-live="polite" aria-atomic="false">
+                <div
+                  className="terminal-output-list"
+                  role="log"
+                  aria-live="polite"
+                  aria-atomic="false"
+                  aria-relevant="additions text"
+                >
                   {terminalEntries.map((entry, index) => (
                     <div key={`${entry.type}-${index}`} className={entry.type === "command" ? "terminal-line" : "terminal-output"}>
                       {entry.type === "command" ? (

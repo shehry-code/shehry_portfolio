@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { BookOpen, BookText, Search } from "lucide-react";
+import SEO from "../components/SEO";
 import { notes } from "../data/content";
 
 export default function Notes() {
@@ -28,7 +29,12 @@ export default function Notes() {
   }, [searchQuery, activeCategory]);
 
   return (
-    <div className="min-h-screen pt-20">
+    <>
+      <SEO
+        title="Notes | Shehry"
+        description="Handwritten technical notes and study pages focused on digital logic, computer architecture, networking, and systems understanding."
+      />
+      <div className="min-h-screen pt-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 sm:py-16">
         <div className="mb-10">
           <p className="text-xs font-mono text-accent uppercase tracking-wider mb-2">Notes</p>
@@ -142,6 +148,7 @@ export default function Notes() {
           </div>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

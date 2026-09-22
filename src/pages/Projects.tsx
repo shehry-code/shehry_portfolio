@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Github, ExternalLink } from "lucide-react";
+import SEO from "../components/SEO";
 import { projects } from "../data/content";
 
 const categories = ["All", ...new Set(projects.map((p) => p.category))];
@@ -13,7 +14,12 @@ export default function Projects() {
     : projects.filter((p) => p.category === activeCategory);
 
   return (
-    <div className="min-h-screen pt-20">
+    <>
+      <SEO
+        title="Projects | Shehry"
+        description="Engineering projects spanning systems programming, cybersecurity, AI, and computer architecture."
+      />
+      <div className="min-h-screen pt-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 sm:py-16">
         {/* Header */}
         <div className="mb-10">
@@ -114,6 +120,7 @@ export default function Projects() {
           ))}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

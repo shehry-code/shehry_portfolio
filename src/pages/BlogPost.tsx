@@ -2,6 +2,7 @@ import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Clock, Calendar, Tag } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import SEO from "../components/SEO";
 import { blogPosts } from "../data/content";
 
 export default function BlogPost() {
@@ -10,13 +11,19 @@ export default function BlogPost() {
 
   if (!post) {
     return (
-      <div className="min-h-screen pt-20 flex items-center justify-center">
+      <>
+        <SEO
+          title="Blog Post Not Found | Shehry"
+          description="The blog post could not be found."
+        />
+        <div className="min-h-screen pt-20 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-text-primary mb-2">Post Not Found</h1>
           <p className="text-text-muted mb-4">The blog post you're looking for doesn't exist.</p>
           <Link to="/blog" className="text-accent hover:underline">← Back to Blog</Link>
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -25,7 +32,12 @@ export default function BlogPost() {
     .slice(0, 3);
 
   return (
-    <div className="min-h-screen pt-20">
+    <>
+      <SEO
+        title={`${post.title} | Shehry`}
+        description={post.description}
+      />
+      <div className="min-h-screen pt-20">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-12 sm:py-16">
         {/* Back */}
         <Link
@@ -105,6 +117,7 @@ export default function BlogPost() {
           </section>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }

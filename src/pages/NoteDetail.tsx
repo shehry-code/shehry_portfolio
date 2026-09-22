@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { ArrowLeft, ArrowRight, BookText, Calendar, Download, RotateCcw, RotateCw, Tag, X } from "lucide-react";
+import SEO from "../components/SEO";
 import { notes } from "../data/content";
 
 export default function NoteDetail() {
@@ -38,13 +39,19 @@ export default function NoteDetail() {
 
   if (!note) {
     return (
-      <div className="min-h-screen pt-20 flex items-center justify-center">
+      <>
+        <SEO
+          title="Note Not Found | Shehry"
+          description="The requested note could not be found."
+        />
+        <div className="min-h-screen pt-20 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-text-primary mb-2">Note Not Found</h1>
           <p className="text-text-muted mb-4">The note you're looking for doesn't exist.</p>
           <Link to="/notes" className="text-accent hover:underline">← Back to Notes</Link>
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -106,7 +113,12 @@ export default function NoteDetail() {
   }, [isLightboxOpen]);
 
   return (
-    <div className="min-h-screen pt-20">
+    <>
+      <SEO
+        title={`${note.title} | Shehry`}
+        description={note.description}
+      />
+      <div className="min-h-screen pt-20">
       <div className="mx-auto max-w-5xl px-4 sm:px-6 py-12 sm:py-16">
         <Link
           to="/notes"
@@ -316,6 +328,7 @@ export default function NoteDetail() {
           </div>
         </div>
       ) : null}
-    </div>
+      </div>
+    </>
   );
 }

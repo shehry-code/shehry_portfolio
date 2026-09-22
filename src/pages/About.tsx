@@ -1,5 +1,6 @@
 import { skills, profile, timeline } from "../data/content";
 import type { SkillLevel } from "../data/content";
+import SEO from "../components/SEO";
 
 function SkillBadge({ name, level }: { name: string; level: SkillLevel }) {
   const colors = {
@@ -17,7 +18,12 @@ function SkillBadge({ name, level }: { name: string; level: SkillLevel }) {
 
 export default function About() {
   return (
-    <div className="min-h-screen pt-20">
+    <>
+      <SEO
+        title="About | Shehry"
+        description="Learn about Shehry's Computer Science journey, systems-focused learning path, and interest in cybersecurity, computer architecture, and low-level computing."
+      />
+      <div className="min-h-screen pt-20">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 py-12 sm:py-16">
         {/* Header */}
         <div className="mb-12">
@@ -187,6 +193,7 @@ export default function About() {
           </div>
         </section>
       </div>
-    </div>
+      </div>
+    </>
   );
 }
