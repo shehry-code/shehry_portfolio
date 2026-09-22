@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { Link, NavLink } from "react-router-dom";
-import { ArrowLeft, BookOpen, Briefcase, FileText, LayoutGrid, Search } from "lucide-react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { ArrowLeft, BookOpen, Briefcase, FileText, LayoutGrid, LogOut, Search } from "lucide-react";
 
 const navItems = [
   { label: "Dashboard", to: "/admin", icon: LayoutGrid },
@@ -18,17 +18,34 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ title, description, actions, children }: AdminLayoutProps) {
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" }).catch(() => {});
+    navigate("/admin");
+  };
+
   return (
     <div className="min-h-screen bg-bg-primary pt-20 text-text-primary">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6 flex items-center justify-between gap-3">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-accent"
-          >
-            <ArrowLeft size={14} />
-            Back to portfolio
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-accent"
+            >
+              <ArrowLeft size={14} />
+              Back to portfolio
+            </Link>
+            <button
+              type="button"
+              onClick={() => void handleLogout()}
+              className="inline-flex items-center gap-2 text-sm text-text-muted transition-colors hover:text-accent"
+            >
+              <LogOut size={14} />
+              Logout
+            </button>
+          </div>
         </div>
 
         <div className="overflow-hidden rounded-xl border border-border bg-bg-card shadow-sm">

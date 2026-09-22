@@ -293,6 +293,19 @@ export const blogPosts: BlogPost[] = [
     content: blogContent["../content/blogs/how-user-define-functions-work-at-the-assembly-level.md"],
   },
 
+  {
+    slug: "nfa-to-dfa",
+    title: "NFA to DFA",
+    description: "how to convert nfa to dfa",
+    date: "2026-09-22",
+    tags: ["computer science"],
+    category: "Theory of automata",
+    featured: false,
+    draft: true,
+    readingTime: 7,
+    content: blogContent["../content/blogs/nfa-to-dfa.md"],
+  },
+
 ];
 
 

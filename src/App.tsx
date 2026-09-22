@@ -1,7 +1,8 @@
 import { HashRouter, Routes, Route, useLocation } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import AdminAuthGate from "./components/AdminAuthGate";
 import SEO, { siteSchema } from "./components/SEO";
 import Home from "./pages/Home";
 import About from "./pages/About";
@@ -47,6 +48,10 @@ function ScrollToTop() {
   return null;
 }
 
+function ProtectedAdminRoute({ children }: { children: ReactNode }) {
+  return <AdminAuthGate>{children}</AdminAuthGate>;
+}
+
 function AppContent({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () => void; }) {
   return (
     <div className="min-h-screen flex flex-col bg-bg-primary">
@@ -70,16 +75,16 @@ function AppContent({ theme, onToggleTheme }: { theme: Theme; onToggleTheme: () 
           <Route path="/research" element={<Research />} />
           <Route path="/work" element={<Work />} />
           <Route path="/contact" element={<Contact />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/blogs" element={<AdminBlogs />} />
-          <Route path="/admin/blogs/new" element={<AdminNewBlog />} />
-          <Route path="/admin/blogs/:slug/edit" element={<AdminEditBlog />} />
-          <Route path="/admin/notes" element={<AdminNotes />} />
-          <Route path="/admin/notes/new" element={<AdminNewNote />} />
-          <Route path="/admin/notes/:slug/edit" element={<AdminEditNote />} />
-          <Route path="/admin/notes/:slug/pages" element={<AdminNotePages />} />
-          <Route path="/admin/research" element={<AdminResearchPlaceholder />} />
-          <Route path="/admin/projects" element={<AdminProjectsPlaceholder />} />
+          <Route path="/admin" element={<ProtectedAdminRoute><AdminDashboard /></ProtectedAdminRoute>} />
+          <Route path="/admin/blogs" element={<ProtectedAdminRoute><AdminBlogs /></ProtectedAdminRoute>} />
+          <Route path="/admin/blogs/new" element={<ProtectedAdminRoute><AdminNewBlog /></ProtectedAdminRoute>} />
+          <Route path="/admin/blogs/:slug/edit" element={<ProtectedAdminRoute><AdminEditBlog /></ProtectedAdminRoute>} />
+          <Route path="/admin/notes" element={<ProtectedAdminRoute><AdminNotes /></ProtectedAdminRoute>} />
+          <Route path="/admin/notes/new" element={<ProtectedAdminRoute><AdminNewNote /></ProtectedAdminRoute>} />
+          <Route path="/admin/notes/:slug/edit" element={<ProtectedAdminRoute><AdminEditNote /></ProtectedAdminRoute>} />
+          <Route path="/admin/notes/:slug/pages" element={<ProtectedAdminRoute><AdminNotePages /></ProtectedAdminRoute>} />
+          <Route path="/admin/research" element={<ProtectedAdminRoute><AdminResearchPlaceholder /></ProtectedAdminRoute>} />
+          <Route path="/admin/projects" element={<ProtectedAdminRoute><AdminProjectsPlaceholder /></ProtectedAdminRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>

@@ -55,6 +55,92 @@ npm run build
 
 The production build is generated in `dist/`.
 
+## Remote Admin Authentication
+
+The remote admin authentication foundation uses GitHub OAuth through Vercel Functions. The admin UI remains on the existing `HashRouter`, while authentication requests use same-origin endpoints:
+
+```text
+/api/auth/github
+/api/auth/github/callback
+/api/auth/session
+/api/auth/logout
+```
+
+Only the configured immutable GitHub numeric user ID is authorized. OAuth state, PKCE, and an HMAC-signed `HttpOnly`, `Secure`, `SameSite=Lax` session cookie are handled server-side. GitHub OAuth credentials are never included in frontend code, and this phase does not perform repository writes.
+
+Configure these values in Vercel Project Settings. Do not prefix them with `VITE_`, and do not commit real values:
+
+```text
+GITHUB_OAUTH_CLIENT_ID=
+GITHUB_OAUTH_CLIENT_SECRET=
+GITHUB_ALLOWED_USER_ID=
+SESSION_SECRET=
+PUBLIC_SITE_URL=https://your-site.vercel.app
+```
+
+Generate `SESSION_SECRET` locally with a cryptographically secure generator, then copy it to the Vercel environment settings without committing it:
+
+```bash
+node -e 'console.log(require("node:crypto").randomBytes(32).toString("base64url"))'
+```
+
+The server requires at least 256 bits of base64url secret material. Rotating `SESSION_SECRET` invalidates every existing signed session because sessions are verified against the current configured secret. Logout still clears the current browser cookie, but a copied cookie remains valid until expiry unless the secret is rotated.
+
+The GitHub OAuth application callback URL must exactly match:
+
+```text
+https://your-site.vercel.app/api/auth/github/callback
+```
+
+For local Vercel Function testing, use the Vercel development runtime with the same variables loaded locally. Running only `vite` does not provide `/api` Functions. `server.js` remains available for the existing local content workflow until later migration phases.
+
+### Admin API security preparation
+
+Future `/api/admin/*` handlers must use the shared `requireAdmin(req, res, handler)` helper before reading or mutating request data. The URL prefix is organizational only; server-side authorization remains mandatory.
+
+The current serverless-safe implementation intentionally does not add an in-memory rate limiter. In-memory limits are local to one warm Vercel instance and do not provide a global guarantee. Phase 3 should add distributed limits such as 5 OAuth initiations per IP per minute, 10 callbacks per IP per 10 minutes, and 30 authenticated mutations per user/IP per minute, with stricter limits for uploads.
+
+Phase 3 mutations must also require an explicit CSRF token. The server should issue a token for the authenticated session, the frontend should send it in an `X-CSRF-Token` header, and every state-changing `POST`, `PUT`, `PATCH`, and `DELETE` admin request should validate it before authorization-sensitive work. `SameSite=Lax` remains useful defense in depth, but is not the sole CSRF control.
+
+## Read-Only GitHub App Integration
+
+The read-only GitHub App integration uses the protected endpoint:
+
+```text
+GET /api/admin/github/status
+```
+
+It verifies the authenticated admin session, obtains an installation token server-side, then checks the configured repository and base branch. The browser receives only connection status and repository coordinates. It never receives the App JWT, installation token, private key, or any OAuth credential.
+
+Configure these additional server-only values in Vercel Project Settings:
+
+```text
+GITHUB_APP_ID=
+GITHUB_APP_PRIVATE_KEY=
+GITHUB_INSTALLATION_ID=
+GITHUB_OWNER=shehry-code
+GITHUB_REPOSITORY=shehry_portfolio
+GITHUB_BASE_BRANCH=main
+```
+
+The private key may be stored as one line with literal `\\n` sequences; the server normalizes those sequences before parsing the key. Do not commit the key or place any of these values in frontend `VITE_` variables.
+
+### Manual GitHub App setup
+
+This repository cannot create or install the GitHub App automatically. Perform these steps manually:
+
+1. Open GitHub Developer settings, choose **GitHub Apps**, and create a new App.
+2. Set the App name and homepage URL according to the deployment. No GitHub App user callback is needed because this phase uses App installation authentication, not GitHub App user OAuth.
+3. Disable webhooks for this phase. No webhook is required for read-only repository verification.
+4. Under repository permissions, grant **Contents: Read-only** and no write permissions.
+5. Restrict the App to **Only select repositories** and select `shehry-code/shehry_portfolio`.
+6. Generate and download the App private key. Store it only in Vercel as `GITHUB_APP_PRIVATE_KEY`.
+7. Install the App on the portfolio repository.
+8. Copy the App ID and installation ID into the corresponding Vercel environment variables. The installation ID is available from the App installation URL or GitHub App installation settings.
+9. Configure `GITHUB_OWNER`, `GITHUB_REPOSITORY`, and `GITHUB_BASE_BRANCH` for the target repository.
+
+The existing GitHub OAuth callback URL remains separate and is still configured as `/api/auth/github/callback` for administrator login.
+
 ## Project Structure
 
 ```text
