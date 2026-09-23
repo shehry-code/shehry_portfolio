@@ -102,6 +102,12 @@ The current serverless-safe implementation intentionally does not add an in-memo
 
 Phase 3 mutations must also require an explicit CSRF token. The server should issue a token for the authenticated session, the frontend should send it in an `X-CSRF-Token` header, and every state-changing `POST`, `PUT`, `PATCH`, and `DELETE` admin request should validate it before authorization-sensitive work. `SameSite=Lax` remains useful defense in depth, but is not the sole CSRF control.
 
+Phase 3C adds the security foundation for those future mutations without wiring any write endpoint. An authenticated browser obtains a fresh CSRF token from `GET /api/auth/csrf`; the server stores a signed session-bound copy in a readable cookie and returns the token to the authenticated browser for the `X-CSRF-Token` header. `requireCsrf()` compares the header with that signed cookie after `requireAdmin()` succeeds. The token is not a GitHub credential and is never stored in localStorage.
+
+Future repository operations must use semantic inputs, not browser-supplied paths. Blog slugs are validated strictly and construct only `src/content/blogs/<slug>.md` plus the managed `src/data/content.ts` index. The internal GitHub Contents primitive rejects every other path, branch, owner, or repository supplied by a caller. It is not exposed as a generic file-writing or GitHub proxy endpoint.
+
+A blog operation updates both its Markdown body and metadata index. The eventual remote implementation should use one Git Data API tree and commit, with the current branch head as the parent, so both files become visible atomically. It should verify the expected branch head before creating the commit and handle a stale head as a conflict rather than issuing two independent Contents API writes. Phase 3C intentionally stops before implementing that mutation workflow.
+
 ## Read-Only GitHub App Integration
 
 The read-only GitHub App integration uses the protected endpoint:

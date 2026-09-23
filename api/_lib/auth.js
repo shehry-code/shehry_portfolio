@@ -1,9 +1,11 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 const SESSION_COOKIE = "__Host-portfolio_admin_session";
+const CSRF_COOKIE = "__Host-portfolio_csrf";
 const OAUTH_STATE_COOKIE = "__Host-portfolio_oauth_state";
 const OAUTH_VERIFIER_COOKIE = "__Host-portfolio_oauth_verifier";
 const SESSION_MAX_AGE = 60 * 60 * 8;
+const CSRF_MAX_AGE = SESSION_MAX_AGE;
 const OAUTH_MAX_AGE = 10 * 60;
 
 const base64UrlEncode = (value) => Buffer.from(value).toString("base64url");
@@ -98,6 +100,7 @@ export const setNoStore = (res) => res.setHeader("Cache-Control", "no-store");
 
 export const clearAuthCookies = (res) => appendCookies(res, [
   expiredCookie(SESSION_COOKIE),
+  expiredCookie(CSRF_COOKIE),
   expiredCookie(OAUTH_STATE_COOKIE),
   expiredCookie(OAUTH_VERIFIER_COOKIE),
 ]);
@@ -127,6 +130,14 @@ export const setSessionCookie = (res, githubUserId) => {
   const now = Math.floor(Date.now() / 1000);
   const session = createSignedValue({ sub: String(githubUserId), iat: now, exp: now + SESSION_MAX_AGE });
   appendCookies(res, [cookie(SESSION_COOKIE, session, SESSION_MAX_AGE)]);
+};
+
+export const issueCsrfToken = (res, userId) => {
+  const token = randomBytes(32).toString("base64url");
+  const now = Math.floor(Date.now() / 1000);
+  const value = createSignedValue({ sub: String(userId), token, iat: now, exp: now + CSRF_MAX_AGE });
+  appendCookies(res, [cookie(CSRF_COOKIE, value, CSRF_MAX_AGE).replace("HttpOnly; ", "")]);
+  return token;
 };
 
 export const parseGithubUserId = (value) => {
@@ -165,6 +176,32 @@ export const requireAdmin = async (req, res, handler) => {
   return handler(user);
 };
 
+export const requireCsrf = (req, res, user) => {
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return true;
+
+  const providedToken = req.headers["x-csrf-token"];
+  const csrfCookie = readSignedValue(parseCookies(req)[CSRF_COOKIE]);
+  const token = csrfCookie?.token;
+  const expectedUserId = user?.id;
+  if (typeof providedToken !== "string" || typeof token !== "string" || csrfCookie.sub !== expectedUserId || csrfCookie.exp <= Math.floor(Date.now() / 1000)) {
+    res.statusCode = 403;
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.end(JSON.stringify({ ok: false, error: "CSRF validation failed." }));
+    return false;
+  }
+
+  const providedBuffer = Buffer.from(providedToken);
+  const expectedBuffer = Buffer.from(token);
+  if (providedBuffer.length !== expectedBuffer.length || !timingSafeEqual(providedBuffer, expectedBuffer)) {
+    res.statusCode = 403;
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.end(JSON.stringify({ ok: false, error: "CSRF validation failed." }));
+    return false;
+  }
+
+  return true;
+};
+
 export const fetchWithTimeout = async (url, options = {}, timeoutMs = 10_000) => {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
@@ -183,4 +220,4 @@ export const getConfig = () => ({
   allowedUserId: getAllowedUserId(),
 });
 
-export { SESSION_COOKIE, OAUTH_STATE_COOKIE, OAUTH_VERIFIER_COOKIE };
+export { CSRF_COOKIE, SESSION_COOKIE, OAUTH_STATE_COOKIE, OAUTH_VERIFIER_COOKIE };

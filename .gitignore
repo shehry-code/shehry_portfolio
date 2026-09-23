@@ -3,3 +3,5 @@ dist/
 .env
 .env.*
 !.env.example
+scripts/get-github-installation-id.js
+.vercel

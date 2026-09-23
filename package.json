@@ -6,7 +6,8 @@
     "dev": "vite",
     "dev:admin": "node server.js & vite",
     "build": "vite build",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.1.0",

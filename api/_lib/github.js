@@ -70,7 +70,8 @@ export const createGithubAppJwt = (config = getGithubConfig(), now = Math.floor(
 
 const getInstallationToken = async (config) => {
   const now = Date.now();
-  if (installationTokenCache && installationTokenCache.expiresAt > now + TOKEN_SAFETY_WINDOW_MS) {
+  const cacheKey = `${config.appId}:${config.installationId}`;
+  if (installationTokenCache?.key === cacheKey && installationTokenCache.expiresAt > now + TOKEN_SAFETY_WINDOW_MS) {
     return installationTokenCache.token;
   }
 
@@ -96,7 +97,7 @@ const getInstallationToken = async (config) => {
     throw new Error("GitHub App installation authentication returned an expired token.");
   }
 
-  installationTokenCache = { token: payload.token, expiresAt };
+  installationTokenCache = { key: cacheKey, token: payload.token, expiresAt };
   return payload.token;
 };
 
