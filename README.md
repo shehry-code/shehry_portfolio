@@ -66,7 +66,7 @@ The remote admin authentication foundation uses GitHub OAuth through Vercel Func
 /api/auth/logout
 ```
 
-Only the configured immutable GitHub numeric user ID is authorized. OAuth state, PKCE, and an HMAC-signed `HttpOnly`, `Secure`, `SameSite=Lax` session cookie are handled server-side. GitHub OAuth credentials are never included in frontend code, and this phase does not perform repository writes.
+Only the configured immutable GitHub numeric user ID is authorized. OAuth state, PKCE, and an HMAC-signed `HttpOnly`, `Secure`, `SameSite=Lax` session cookie are handled server-side. GitHub OAuth credentials are never included in frontend code, and OAuth is not used for repository writes.
 
 Configure these values in Vercel Project Settings. Do not prefix them with `VITE_`, and do not commit real values:
 
@@ -108,9 +108,9 @@ Future repository operations must use semantic inputs, not browser-supplied path
 
 A blog operation updates both its Markdown body and metadata index. The eventual remote implementation should use one Git Data API tree and commit, with the current branch head as the parent, so both files become visible atomically. It should verify the expected branch head before creating the commit and handle a stale head as a conflict rather than issuing two independent Contents API writes. Phase 3C intentionally stops before implementing that mutation workflow.
 
-## Read-Only GitHub App Integration
+## Controlled GitHub App Integration
 
-The read-only GitHub App integration uses the protected endpoint:
+The GitHub App integration uses the protected read-only status endpoint:
 
 ```text
 GET /api/admin/github/status
@@ -138,7 +138,7 @@ This repository cannot create or install the GitHub App automatically. Perform t
 1. Open GitHub Developer settings, choose **GitHub Apps**, and create a new App.
 2. Set the App name and homepage URL according to the deployment. No GitHub App user callback is needed because this phase uses App installation authentication, not GitHub App user OAuth.
 3. Disable webhooks for this phase. No webhook is required for read-only repository verification.
-4. Under repository permissions, grant **Contents: Read-only** and no write permissions.
+4. Under repository permissions, grant **Contents: Read & Write** only. Keep the App installed only on `shehry-code/shehry_portfolio` and leave all other permissions disabled.
 5. Restrict the App to **Only select repositories** and select `shehry-code/shehry_portfolio`.
 6. Generate and download the App private key. Store it only in Vercel as `GITHUB_APP_PRIVATE_KEY`.
 7. Install the App on the portfolio repository.
@@ -146,6 +146,14 @@ This repository cannot create or install the GitHub App automatically. Perform t
 9. Configure `GITHUB_OWNER`, `GITHUB_REPOSITORY`, and `GITHUB_BASE_BRANCH` for the target repository.
 
 The existing GitHub OAuth callback URL remains separate and is still configured as `/api/auth/github/callback` for administrator login.
+
+### Controlled repository write test
+
+Phase 3D adds the protected endpoint:
+
+`POST /api/admin/github/test-write`
+
+It requires the authenticated admin session and `X-CSRF-Token`, then writes a small timestamped diagnostic file only at `docs/admin-write-test.txt` in the server-configured repository and branch. The browser cannot supply the repository, branch, path, or content. The endpoint returns only the repository, branch, fixed path, and resulting commit SHA. It is an infrastructure test only and is not connected to the blog editor.
 
 ## Project Structure
 

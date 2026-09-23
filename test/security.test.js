@@ -5,10 +5,15 @@ import test from "node:test";
 import {
   issueCsrfToken,
   requireCsrf,
+  setSessionCookie,
 } from "../api/_lib/auth.js";
+import testWriteHandler from "../api/admin/github/test-write.js";
 import { BLOG_LIMITS, createBlogOperation, validateBlog } from "../api/_lib/blog.js";
 import { writeManagedRepositoryFile } from "../api/_lib/github-content.js";
-import { assertManagedRepositoryPath, getBlogRepositoryPaths } from "../api/_lib/repository-paths.js";
+import { ADMIN_WRITE_TEST_PATH, assertManagedRepositoryPath, getBlogRepositoryPaths } from "../api/_lib/repository-paths.js";
+
+process.env.SESSION_SECRET = "a".repeat(43) + "_route-test";
+process.env.GITHUB_ALLOWED_USER_ID = "42";
 
 const { privateKey } = generateKeyPairSync("rsa", { modulusLength: 2048 });
 const githubConfig = {
@@ -37,6 +42,32 @@ const cookieValue = (response, name) => {
   return cookie.slice(name.length + 1).split(";", 1)[0];
 };
 
+const authenticatedRequest = () => {
+  process.env.SESSION_SECRET = "a".repeat(43) + "_route-test";
+  process.env.GITHUB_ALLOWED_USER_ID = "42";
+  const sessionResponse = createResponse();
+  setSessionCookie(sessionResponse, "42");
+  const csrfResponse = createResponse();
+  const csrfToken = issueCsrfToken(csrfResponse, "42");
+  const request = {
+    method: "POST",
+    headers: {
+      cookie: `__Host-portfolio_admin_session=${cookieValue(sessionResponse, "__Host-portfolio_admin_session")}; __Host-portfolio_csrf=${cookieValue(csrfResponse, "__Host-portfolio_csrf")}`,
+      "x-csrf-token": csrfToken,
+    },
+  };
+  return request;
+};
+
+const configureGithubEnvironment = (installationId) => {
+  process.env.GITHUB_APP_ID = githubConfig.appId;
+  process.env.GITHUB_APP_PRIVATE_KEY = githubConfig.privateKey;
+  process.env.GITHUB_INSTALLATION_ID = installationId;
+  process.env.GITHUB_OWNER = githubConfig.owner;
+  process.env.GITHUB_REPOSITORY = githubConfig.repository;
+  process.env.GITHUB_BASE_BRANCH = githubConfig.baseBranch;
+};
+
 const validBlog = () => ({
   slug: "hello-world",
   title: "Hello World",
@@ -52,8 +83,6 @@ const validBlog = () => ({
 });
 
 test("CSRF rejects missing and incorrect tokens, accepts a session-bound token", () => {
-  process.env.SESSION_SECRET = "a".repeat(43) + "_csrf-test";
-  process.env.GITHUB_ALLOWED_USER_ID = "42";
   const issueResponse = createResponse();
   const token = issueCsrfToken(issueResponse, "42");
   const csrfCookie = cookieValue(issueResponse, "__Host-portfolio_csrf");
@@ -89,6 +118,7 @@ test("repository paths accept safe blog slugs and reject traversal or unexpected
   for (const path of ["../secret", "../../etc/passwd", "/absolute/path", "..\\secret", "%2e%2e%2fsecret", "src/content/blogs/hello-world.js", "src/other/hello-world.md", ""]) {
     assert.throws(() => assertManagedRepositoryPath(path));
   }
+  assert.equal(assertManagedRepositoryPath(ADMIN_WRITE_TEST_PATH), ADMIN_WRITE_TEST_PATH);
   for (const slug of ["hello-world", "nfa-to-dfa", "dram-row-buffer"]) {
     assert.equal(getBlogRepositoryPaths(slug).markdown.endsWith(`${slug}.md`), true);
   }
@@ -181,6 +211,77 @@ test("GitHub token acquisition failure is generic and GitHub 5xx stays server-si
       () => writeManagedRepositoryFile({ path: "src/content/blogs/hello-world.md", content: "# Hello", message: "Update hello-world blog" }, { ...githubConfig, installationId: "987657" }),
       /GitHub App installation authentication failed/,
     );
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("test-write endpoint requires an admin session, POST, and CSRF token", async () => {
+  const unauthenticatedResponse = createResponse();
+  await testWriteHandler({ method: "POST", headers: {} }, unauthenticatedResponse);
+  assert.equal(unauthenticatedResponse.statusCode, 401);
+
+  const invalidCsrfRequest = authenticatedRequest();
+  invalidCsrfRequest.headers["x-csrf-token"] = "wrong";
+  const invalidCsrfResponse = createResponse();
+  await testWriteHandler(invalidCsrfRequest, invalidCsrfResponse);
+  assert.equal(invalidCsrfResponse.statusCode, 403);
+
+  const getResponse = createResponse();
+  await testWriteHandler({ method: "GET", headers: {} }, getResponse);
+  assert.equal(getResponse.statusCode, 405);
+  assert.equal(getResponse.getHeader("Allow"), "POST");
+});
+
+test("test-write endpoint uses only the fixed repository path and returns safe commit data", async () => {
+  configureGithubEnvironment("987658");
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url, options });
+    if (calls.length === 1) return new Response(JSON.stringify({ token: "installation-token", expires_at: "2099-01-01T00:00:00Z" }), { status: 201 });
+    if (calls.length === 2) return new Response(JSON.stringify({ sha: "a".repeat(40) }), { status: 200 });
+    return new Response(JSON.stringify({ commit: { sha: "b".repeat(40) }, content: { path: ADMIN_WRITE_TEST_PATH } }), { status: 201 });
+  };
+
+  try {
+    const response = createResponse();
+    const request = authenticatedRequest();
+    request.body = JSON.stringify({ owner: "attacker", repository: "other", path: "src/secrets.txt" });
+    await testWriteHandler(request, response);
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(JSON.parse(response.body), {
+      ok: true,
+      repository: "shehry-code/shehry_portfolio",
+      branch: "main",
+      path: ADMIN_WRITE_TEST_PATH,
+      commitSha: "b".repeat(40),
+    });
+    assert.match(calls[0].options.headers.Authorization, /^Bearer /);
+    assert.match(calls[1].url, /\/repos\/shehry-code\/shehry_portfolio\/contents\/docs\/admin-write-test\.txt\?ref=main$/);
+    assert.equal(calls[2].options.method, "PUT");
+    assert.match(calls[2].url, /\/repos\/shehry-code\/shehry_portfolio\/contents\/docs\/admin-write-test\.txt$/);
+    const writeBody = JSON.parse(calls[2].options.body);
+    assert.equal(writeBody.branch, "main");
+    assert.equal(writeBody.sha, "a".repeat(40));
+    assert.match(Buffer.from(writeBody.content, "base64").toString(), /^Repository write test\nUTC timestamp: /);
+    assert.equal(JSON.stringify(JSON.parse(response.body)).includes("installation-token"), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("test-write endpoint handles upstream failures without leaking credentials", async () => {
+  configureGithubEnvironment("987659");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ message: "failure", token: "do-not-return" }), { status: 500 });
+
+  try {
+    const response = createResponse();
+    await testWriteHandler(authenticatedRequest(), response);
+    assert.equal(response.statusCode, 502);
+    assert.deepEqual(JSON.parse(response.body), { ok: false, error: "Repository write test failed." });
+    assert.equal(response.body.includes("do-not-return"), false);
   } finally {
     globalThis.fetch = originalFetch;
   }
