@@ -256,10 +256,10 @@ export const blogPosts: BlogPost[] = [
   {
     slug: "what-happens-when-program-runs",
     title: "What Actually Happens When a Program Runs?",
-    description: "Tracing the journey of a program from source code to execution — the full stack of abstraction.",
+    description: "Tracing the journey of a program from source code to execution — the full stack of abstraction.\n( shehry )",
     date: "2026-10-01",
-    updated: "2026-09-22",
-    tags: ["Systems", "Compilers", "Operating Systems", "CPU"],
+    updated: "2026-09-24",
+    tags: ["Systems","Compilers","Operating Systems","CPU"],
     category: "Systems",
     featured: true,
     draft: false,
