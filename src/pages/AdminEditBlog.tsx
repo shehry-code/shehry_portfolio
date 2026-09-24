@@ -55,6 +55,7 @@ export default function AdminEditBlog() {
   const [loadError, setLoadError] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [submitSuccess, setSubmitSuccess] = useState("");
+  const [revisionHead, setRevisionHead] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
@@ -64,13 +65,17 @@ export default function AdminEditBlog() {
       setIsLoading(true);
       setLoadError("");
       try {
-        const response = await fetch(`http://localhost:3001/api/content/blogs/${encodeURIComponent(slug)}`);
+        const response = await fetch(`/api/admin/blogs/${encodeURIComponent(slug)}`, { credentials: "include" });
         const payload = await response.json();
         if (!response.ok || !payload.ok) {
           throw new Error(payload.error || "Unable to load blog.");
         }
+        if (typeof payload.revision?.head !== "string") {
+          throw new Error("Unable to load blog revision.");
+        }
         if (!cancelled) {
           const blog = payload.blog;
+          setRevisionHead(payload.revision.head);
           setForm({
             title: blog.title,
             slug: blog.slug,
@@ -129,12 +134,23 @@ export default function AdminEditBlog() {
     setSubmitError("");
     setSubmitSuccess("");
     try {
-      const response = await fetch(`http://localhost:3001/api/content/blogs/${encodeURIComponent(slug)}`, {
+      const csrfResponse = await fetch("/api/auth/csrf", { credentials: "include" });
+      const csrfPayload = await csrfResponse.json();
+      if (!csrfResponse.ok || !csrfPayload.ok || typeof csrfPayload.csrfToken !== "string") {
+        throw new Error("Unable to prepare the blog update.");
+      }
+
+      const response = await fetch(`/api/admin/blogs/${encodeURIComponent(slug)}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": csrfPayload.csrfToken,
+        },
         body: JSON.stringify({
+          expectedRevision: revisionHead,
           title: form.title.trim(),
-          slug: form.slug.trim(),
+          slug,
           description: form.description.trim(),
           date: form.date,
           updated: new Date().toISOString().slice(0, 10),
@@ -147,7 +163,11 @@ export default function AdminEditBlog() {
         }),
       });
       const payload = await response.json();
+      if (response.status === 409) {
+        throw new Error("This blog was changed elsewhere. Reload the latest version before saving again.");
+      }
       if (!response.ok || !payload.ok) throw new Error(payload.error || "Unable to update blog.");
+      setForm((current) => ({ ...current, slug: payload.slug }));
       setSubmitSuccess("Blog updated successfully.");
       setTimeout(() => navigate("/admin/blogs"), 250);
     } catch (error) {
@@ -182,7 +202,7 @@ export default function AdminEditBlog() {
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="grid gap-5 md:grid-cols-2">
             <Field label="Title" id="blog-title" value={form.title} error={showError("title")} onBlur={() => setTouched((current) => ({ ...current, title: true }))} onChange={(value) => updateField("title", value)} />
-            <Field label="Slug" id="blog-slug" value={form.slug} error={showError("slug")} onBlur={() => setTouched((current) => ({ ...current, slug: true }))} onChange={(value) => updateField("slug", value)} />
+            <div className="space-y-2"><label htmlFor="blog-slug" className="text-sm font-medium text-text-primary">Slug</label><input id="blog-slug" value={form.slug} readOnly aria-readonly="true" className="w-full rounded-md border border-border bg-bg-secondary px-3 py-2.5 text-sm text-text-muted focus:outline-none" /></div>
           </div>
           <div className="space-y-2"><label htmlFor="blog-description" className="text-sm font-medium text-text-primary">Description</label><textarea id="blog-description" value={form.description} onBlur={() => setTouched((current) => ({ ...current, description: true }))} onChange={(event) => updateField("description", event.target.value)} rows={3} className={`w-full rounded-md border bg-bg-secondary px-3 py-2.5 text-sm text-text-primary focus:outline-none ${showError("description") ? "border-red/40" : "border-border focus:border-accent/30"}`} />{showError("description") ? <p className="text-xs text-red">{errors.description}</p> : null}</div>
           <div className="grid gap-5 md:grid-cols-4">
