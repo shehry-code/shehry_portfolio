@@ -281,7 +281,7 @@ export const blogPosts: BlogPost[] = [
     content: blogContent["../content/blogs/why-learn-computer-architecture.md"],
   },
   {
-    slug: "How-user-define-functions-work-at-the-assembly-level",
+    slug: "how-user-define-functions-work-at-the-assembly-level",
     title: "How User-Defined Functions Work at the Assembly Level",
     description: "Exploring the mechanics of function calls and returns in assembly language.And how stack is used to manage function calls.",
     date: "2026-10-01",

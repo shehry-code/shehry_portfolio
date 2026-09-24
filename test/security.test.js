@@ -7,6 +7,7 @@ import {
   requireCsrf,
   setSessionCookie,
 } from "../api/_lib/auth.js";
+import blogHandler from "../api/admin/blogs/[slug].js";
 import testWriteHandler from "../api/admin/github/test-write.js";
 import { BLOG_LIMITS, createBlogOperation, validateBlog } from "../api/_lib/blog.js";
 import { writeManagedRepositoryFile } from "../api/_lib/github-content.js";
@@ -80,6 +81,43 @@ const validBlog = () => ({
   draft: true,
   readingTime: 5,
   content: "# Hello\n\nThis is Markdown content.",
+});
+
+const blogSlug = "hello-world";
+const blogMarkdown = "# Hello\n\nThis is the current Markdown content.";
+const blogIndex = `export const blogPosts: BlogPost[] = [
+  {
+    slug: "${blogSlug}",
+    title: "Hello World",
+    description: "A sufficiently descriptive blog post summary.",
+    date: "2026-09-22",
+    updated: "2026-09-23",
+    tags: ["Systems", "Security"],
+    category: "Engineering",
+    featured: false,
+    draft: true,
+    readingTime: 5,
+    content: blogContent["../content/blogs/${blogSlug}.md"],
+  },
+];
+`;
+
+const githubFileResponse = (content, sha) => new Response(JSON.stringify({
+  type: "file",
+  encoding: "base64",
+  content: Buffer.from(content).toString("base64"),
+  sha,
+}), { status: 200 });
+
+const configureBlogEnvironment = (installationId = "987660") => {
+  configureGithubEnvironment(installationId);
+  process.env.GITHUB_BASE_BRANCH = "main";
+};
+
+const authenticatedBlogRequest = (method, slug = blogSlug) => ({
+  ...authenticatedRequest(),
+  method,
+  query: { slug },
 });
 
 test("CSRF rejects missing and incorrect tokens, accepts a session-bound token", () => {
@@ -282,6 +320,230 @@ test("test-write endpoint handles upstream failures without leaking credentials"
     assert.equal(response.statusCode, 502);
     assert.deepEqual(JSON.parse(response.body), { ok: false, error: "Repository write test failed." });
     assert.equal(response.body.includes("do-not-return"), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("production blog GET rejects unauthenticated requests", async () => {
+  const response = createResponse();
+  await blogHandler({ method: "GET", query: { slug: blogSlug }, headers: {} }, response);
+  assert.equal(response.statusCode, 401);
+});
+
+test("production blog GET rejects invalid and nonexistent slugs safely", async () => {
+  const invalidResponse = createResponse();
+  await blogHandler(authenticatedBlogRequest("GET", "../secret"), invalidResponse);
+  assert.equal(invalidResponse.statusCode, 400);
+  assert.deepEqual(JSON.parse(invalidResponse.body), { ok: false, error: "Invalid blog slug." });
+
+  configureBlogEnvironment("987661");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).includes("access_tokens")) return new Response(JSON.stringify({ token: "installation-token", expires_at: "2099-01-01T00:00:00Z" }), { status: 201 });
+    return new Response(JSON.stringify({ message: "private GitHub detail" }), { status: 404 });
+  };
+  try {
+    const response = createResponse();
+    await blogHandler(authenticatedBlogRequest("GET"), response);
+    assert.equal(response.statusCode, 404);
+    assert.deepEqual(JSON.parse(response.body), { ok: false, error: "Blog not found." });
+    assert.equal(response.body.includes("private GitHub detail"), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("production blog GET returns metadata, Markdown, and branch revision", async () => {
+  configureBlogEnvironment("987662");
+  const head = "a".repeat(40);
+  const markdownSha = "b".repeat(40);
+  const indexSha = "c".repeat(40);
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const value = String(url);
+    if (value.includes("access_tokens")) return new Response(JSON.stringify({ token: "installation-token", expires_at: "2099-01-01T00:00:00Z" }), { status: 201 });
+    if (value.includes("/git/ref/heads/main")) return new Response(JSON.stringify({ object: { type: "commit", sha: head } }), { status: 200 });
+    if (value.includes("src/data/content.ts")) return githubFileResponse(blogIndex, indexSha);
+    return githubFileResponse(blogMarkdown, markdownSha);
+  };
+  try {
+    const response = createResponse();
+    await blogHandler(authenticatedBlogRequest("GET"), response);
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(JSON.parse(response.body), {
+      ok: true,
+      blog: { ...validBlog(), content: blogMarkdown },
+      revision: { branch: "main", head, files: { markdown: markdownSha, index: indexSha } },
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("production blog PUT requires authentication and valid CSRF", async () => {
+  const unauthenticatedResponse = createResponse();
+  await blogHandler({ method: "PUT", query: { slug: blogSlug }, headers: {} }, unauthenticatedResponse);
+  assert.equal(unauthenticatedResponse.statusCode, 401);
+
+  const invalidCsrfRequest = authenticatedBlogRequest("PUT");
+  invalidCsrfRequest.headers["x-csrf-token"] = "wrong";
+  const invalidCsrfResponse = createResponse();
+  await blogHandler(invalidCsrfRequest, invalidCsrfResponse);
+  assert.equal(invalidCsrfResponse.statusCode, 403);
+});
+
+test("production blog PUT rejects invalid payloads and browser paths", async () => {
+  const request = authenticatedBlogRequest("PUT");
+  request.body = { expectedRevision: "a".repeat(40), ...validBlog(), path: "../../secret" };
+  const response = createResponse();
+  await blogHandler(request, response);
+  assert.equal(response.statusCode, 400);
+  assert.deepEqual(JSON.parse(response.body), { ok: false, error: "Invalid blog payload." });
+
+  const invalidRevisionRequest = authenticatedBlogRequest("PUT");
+  invalidRevisionRequest.body = { expectedRevision: "not-a-revision", ...validBlog() };
+  const invalidRevisionResponse = createResponse();
+  await blogHandler(invalidRevisionRequest, invalidRevisionResponse);
+  assert.equal(invalidRevisionResponse.statusCode, 400);
+});
+
+test("production blog PUT rejects stale revisions before writing", async () => {
+  configureBlogEnvironment("987663");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).includes("access_tokens")) return new Response(JSON.stringify({ token: "installation-token", expires_at: "2099-01-01T00:00:00Z" }), { status: 201 });
+    return new Response(JSON.stringify({ object: { type: "commit", sha: "b".repeat(40) } }), { status: 200 });
+  };
+  try {
+    const request = authenticatedBlogRequest("PUT");
+    request.body = { expectedRevision: "a".repeat(40), ...validBlog() };
+    const response = createResponse();
+    await blogHandler(request, response);
+    assert.equal(response.statusCode, 409);
+    assert.deepEqual(JSON.parse(response.body), { ok: false, error: "Blog revision is stale." });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("production blog PUT commits Markdown and metadata in one Git commit", async () => {
+  configureBlogEnvironment("987664");
+  const head = "d".repeat(40);
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options = {}) => {
+    const value = String(url);
+    calls.push({ url: value, options });
+    if (value.includes("access_tokens")) return new Response(JSON.stringify({ token: "installation-token", expires_at: "2099-01-01T00:00:00Z" }), { status: 201 });
+    if (value.includes("/git/ref/heads/main")) return new Response(JSON.stringify({ object: { type: "commit", sha: head } }), { status: 200 });
+    if (value.includes("src/data/content.ts")) return githubFileResponse(blogIndex, "e".repeat(40));
+    if (value.includes("src/content/blogs/hello-world.md")) return githubFileResponse(blogMarkdown, "f".repeat(40));
+    if (value.endsWith(`/git/commits/${head}`)) return new Response(JSON.stringify({ tree: { sha: "1".repeat(40) } }), { status: 200 });
+    if (value.endsWith("/git/blobs")) return new Response(JSON.stringify({ sha: calls.filter((call) => call.url.endsWith("/git/blobs")).length === 1 ? "2".repeat(40) : "3".repeat(40) }), { status: 201 });
+    if (value.endsWith("/git/trees")) return new Response(JSON.stringify({ sha: "4".repeat(40) }), { status: 201 });
+    if (value.endsWith("/git/commits")) return new Response(JSON.stringify({ sha: "5".repeat(40) }), { status: 201 });
+    if (value.endsWith("/git/refs/heads/main")) return new Response(JSON.stringify({ object: { sha: "5".repeat(40) } }), { status: 200 });
+    throw new Error(`Unexpected GitHub request: ${value}`);
+  };
+  try {
+    const request = authenticatedBlogRequest("PUT");
+    request.body = { expectedRevision: head, ...validBlog() };
+    const response = createResponse();
+    await blogHandler(request, response);
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(JSON.parse(response.body), { ok: true, slug: blogSlug, commitSha: "5".repeat(40) });
+
+    const treeRequest = calls.find((call) => call.url.endsWith("/git/trees"));
+    const treeBody = JSON.parse(treeRequest.options.body);
+    assert.deepEqual(treeBody.tree.map((entry) => entry.path), ["src/content/blogs/hello-world.md", "src/data/content.ts"]);
+    assert.equal(calls.filter((call) => call.url.endsWith("/git/commits")).length, 1);
+    assert.equal(calls.filter((call) => call.url.endsWith("/git/refs/heads/main") && call.options.method === "PATCH").length, 1);
+    assert.equal(response.body.includes("private-key"), false);
+    assert.equal(response.body.includes("Authorization"), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("production blog PUT treats a non-ref GitHub 422 as a generic failure", async () => {
+  configureBlogEnvironment("987666");
+  const head = "6".repeat(40);
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options = {}) => {
+    const value = String(url);
+    if (value.includes("access_tokens")) return new Response(JSON.stringify({ token: "installation-token", expires_at: "2099-01-01T00:00:00Z" }), { status: 201 });
+    if (value.includes("/git/ref/heads/main")) return new Response(JSON.stringify({ object: { type: "commit", sha: head } }), { status: 200 });
+    if (value.includes("src/data/content.ts")) return githubFileResponse(blogIndex, "7".repeat(40));
+    if (value.includes("src/content/blogs/hello-world.md")) return githubFileResponse(blogMarkdown, "8".repeat(40));
+    if (value.endsWith(`/git/commits/${head}`)) return new Response(JSON.stringify({ tree: { sha: "9".repeat(40) } }), { status: 200 });
+    if (value.endsWith("/git/blobs") && options.method === "POST") return new Response(JSON.stringify({ message: "private blob validation error" }), { status: 422 });
+    throw new Error(`Unexpected GitHub request: ${value}`);
+  };
+  try {
+    const request = authenticatedBlogRequest("PUT");
+    request.body = { expectedRevision: head, ...validBlog() };
+    const response = createResponse();
+    await blogHandler(request, response);
+    assert.equal(response.statusCode, 502);
+    assert.deepEqual(JSON.parse(response.body), { ok: false, error: "Unable to update blog." });
+    assert.equal(response.body.includes("private blob validation error"), false);
+    assert.equal(response.body.includes("Blog revision is stale."), false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("production blog PUT treats a final ref-update 422 as a stale revision", async () => {
+  configureBlogEnvironment("987667");
+  const head = "a".repeat(40);
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, options = {}) => {
+    const value = String(url);
+    calls.push({ value, method: options.method });
+    if (value.includes("access_tokens")) return new Response(JSON.stringify({ token: "installation-token", expires_at: "2099-01-01T00:00:00Z" }), { status: 201 });
+    if (value.includes("/git/ref/heads/main")) return new Response(JSON.stringify({ object: { type: "commit", sha: head } }), { status: 200 });
+    if (value.includes("/git/refs/heads/main") && options.method === "PATCH") {
+      return new Response(JSON.stringify({ message: "non-fast-forward" }), { status: 422 });
+    }
+    if (value.includes("src/data/content.ts")) return githubFileResponse(blogIndex, "b".repeat(40));
+    if (value.includes("src/content/blogs/hello-world.md")) return githubFileResponse(blogMarkdown, "c".repeat(40));
+    if (value.endsWith(`/git/commits/${head}`)) return new Response(JSON.stringify({ tree: { sha: "d".repeat(40) } }), { status: 200 });
+    if (value.endsWith("/git/blobs")) return new Response(JSON.stringify({ sha: "e".repeat(40) }), { status: 201 });
+    if (value.endsWith("/git/trees")) return new Response(JSON.stringify({ sha: "f".repeat(40) }), { status: 201 });
+    if (value.endsWith("/git/commits")) return new Response(JSON.stringify({ sha: "1".repeat(40) }), { status: 201 });
+    throw new Error(`Unexpected GitHub request: ${value}`);
+  };
+  try {
+    const request = authenticatedBlogRequest("PUT");
+    request.body = { expectedRevision: head, ...validBlog() };
+    const response = createResponse();
+    await blogHandler(request, response);
+    assert.deepEqual(calls.map((call) => call.method), ["POST", undefined, undefined, undefined, undefined, undefined, "POST", "POST", "POST", "POST", undefined, "PATCH"]);
+    assert.equal(response.statusCode, 409);
+    assert.deepEqual(JSON.parse(response.body), { ok: false, error: "Blog revision is stale." });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("production blog PUT returns generic errors without GitHub response bodies", async () => {
+  configureBlogEnvironment("987665");
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    if (String(url).includes("access_tokens")) return new Response(JSON.stringify({ token: "installation-token", expires_at: "2099-01-01T00:00:00Z" }), { status: 201 });
+    return new Response(JSON.stringify({ message: "private GitHub error body", token: "secret-token" }), { status: 403 });
+  };
+  try {
+    const request = authenticatedBlogRequest("PUT");
+    request.body = { expectedRevision: "a".repeat(40), ...validBlog() };
+    const response = createResponse();
+    await blogHandler(request, response);
+    assert.equal(response.statusCode, 502);
+    assert.deepEqual(JSON.parse(response.body), { ok: false, error: "Unable to update blog." });
+    assert.equal(response.body.includes("private GitHub error body"), false);
+    assert.equal(response.body.includes("secret-token"), false);
   } finally {
     globalThis.fetch = originalFetch;
   }

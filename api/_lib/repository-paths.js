@@ -24,8 +24,9 @@ export const assertManagedRepositoryPath = (path) => {
   }
 
   if (path === ADMIN_WRITE_TEST_PATH) return path;
+  if (path === BLOG_INDEX_PATH) return path;
 
-  if (path === BLOG_INDEX_PATH || (path.startsWith(BLOG_MARKDOWN_PREFIX) && path.endsWith(".md"))) {
+  if (path.startsWith(BLOG_MARKDOWN_PREFIX) && path.endsWith(".md")) {
     const slug = path.slice(BLOG_MARKDOWN_PREFIX.length, -3);
     if (getBlogRepositoryPaths(slug).markdown === path) return path;
   }
