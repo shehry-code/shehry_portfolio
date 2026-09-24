@@ -274,9 +274,6 @@ test("test-write endpoint uses only the fixed repository path and returns safe c
 test("test-write endpoint handles upstream failures without leaking credentials", async () => {
   configureGithubEnvironment("987659");
   const originalFetch = globalThis.fetch;
-  const originalConsoleError = console.error;
-  const logs = [];
-  console.error = (...args) => logs.push(args);
   globalThis.fetch = async () => new Response(JSON.stringify({ message: "failure", token: "do-not-return" }), { status: 500 });
 
   try {
@@ -285,9 +282,7 @@ test("test-write endpoint handles upstream failures without leaking credentials"
     assert.equal(response.statusCode, 502);
     assert.deepEqual(JSON.parse(response.body), { ok: false, error: "Repository write test failed." });
     assert.equal(response.body.includes("do-not-return"), false);
-    assert.equal(JSON.stringify(logs).includes("do-not-return"), false);
   } finally {
     globalThis.fetch = originalFetch;
-    console.error = originalConsoleError;
   }
 });

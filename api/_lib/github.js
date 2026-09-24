@@ -8,10 +8,6 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 
 let installationTokenCache = null;
 
-const logGithubFailure = (stage, details = {}) => {
-  console.error("GitHub write diagnostic", { stage, ...details });
-};
-
 const requiredGithubEnv = (name) => {
   const value = process.env[name];
   if (!value) throw new Error(`Missing required GitHub App configuration: ${name}`);
@@ -90,10 +86,7 @@ const getInstallationToken = async (config) => {
     },
   }, DEFAULT_TIMEOUT_MS);
 
-  if (!response.ok) {
-    logGithubFailure("installation-token", { status: response.status, statusText: response.statusText });
-    throw new Error("GitHub App installation authentication failed.");
-  }
+  if (!response.ok) throw new Error("GitHub App installation authentication failed.");
   const payload = await response.json();
   if (typeof payload.token !== "string" || typeof payload.expires_at !== "string") {
     throw new Error("GitHub App installation authentication returned an invalid response.");
@@ -114,7 +107,7 @@ export const githubRequest = async (path, options = {}, config = getGithubConfig
   }
 
   const token = await getInstallationToken(config);
-  const response = await fetchWithTimeout(`${GITHUB_API_BASE}${path}`, {
+  return fetchWithTimeout(`${GITHUB_API_BASE}${path}`, {
     ...options,
     headers: {
       Accept: "application/vnd.github+json",
@@ -124,13 +117,4 @@ export const githubRequest = async (path, options = {}, config = getGithubConfig
       Authorization: `Bearer ${token}`,
     },
   }, DEFAULT_TIMEOUT_MS);
-  if (!response.ok) {
-    logGithubFailure("github-request", {
-      method: options.method || "GET",
-      path,
-      status: response.status,
-      statusText: response.statusText,
-    });
-  }
-  return response;
 };
